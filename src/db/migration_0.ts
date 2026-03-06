@@ -1,0 +1,35 @@
+import { db } from "./client";
+
+await db.execute(`
+
+CREATE TABLE months (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  month INTEGER NOT NULL,
+  year INTEGER NOT NULL,
+  create_at TEXT DEFAULT CURRENT_TIMESTAMP,
+);
+
+CREATE TABLE IF NOT EXISTS expenses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  month_id INTEGER NOT NULL,
+  category TEXT NOT NULL,
+  amount REAL NOT NULL,
+  note TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(month_id) REFERENCES months(id)
+V);
+
+CREATE TABLE IF NOT EXISTS pay (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  amount REAL NOT NULL,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+V);
+
+CREATE TABLE expense_templates (
+  id INTEGER PRIMARY AUTOINCREMENT,
+  category TEXT NOT NULL,
+  default_amount REAL DEFAULT 0,
+  note TEXT
+);
+
+`);
