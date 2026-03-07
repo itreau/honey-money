@@ -1,19 +1,65 @@
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ExpenseRow } from "./ExpenseRow";
+import { useEffect, useState } from "react";
+import type { Expense } from "@/models/Expense";
 
-const data = [
-  { id: "1", category: "Groceries", budget: 400, spent: 320 },
-  { id: "2", category: "Dining", budget: 150, spent: 120 },
-  { id: "3", category: "Shopping", budget: 200, spent: 240 },
-];
+interface BudgetTableProps {
+  monthId: number | null;
+  onExpensesChange?: (total: number) => void;
+}
 
-export default function BudgetTable() {
+export default function BudgetTable({ monthId, onExpensesChange }: BudgetTableProps) {
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (monthId) {
+      loadExpenses();
+    }
+  }, [monthId]);
+
+  useEffect(() => {
+    const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+    onExpensesChange?.(total);
+  }, [expenses]);
+
+  async function loadExpenses() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/expenses?monthId=${monthId}`);
+      const data = await res.json();
+      setExpenses(data);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function updateExpense(id: number, amount: number) {
+    await fetch(`/api/expenses/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount }),
+    });
+
+    setExpenses((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, amount } : e)),
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <p className="text-muted-foreground">Loading expenses...</p>
+      </div>
+    );
+  }
+
   return (
     <Table>
       <TableHeader>
@@ -26,27 +72,13 @@ export default function BudgetTable() {
       </TableHeader>
 
       <TableBody>
-        {data.map((item) => {
-          const remaining = item.budget - item.spent;
-
-          return (
-            <TableRow key={item.id}>
-              <TableCell>{item.category}</TableCell>
-              <TableCell>${item.budget}</TableCell>
-              <TableCell>${item.spent}</TableCell>
-
-              <TableCell
-                className={
-                  remaining < 0
-                    ? "text-red-500 font-semibold"
-                    : "text-green-600"
-                }
-              >
-                ${remaining}
-              </TableCell>
-            </TableRow>
-          );
-        })}
+        {expenses.map((expense) => (
+          <ExpenseRow
+            key={expense.id}
+            expense={expense}
+            onUpdate={updateExpense}
+          />
+        ))}
       </TableBody>
     </Table>
   );

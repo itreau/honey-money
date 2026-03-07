@@ -3,7 +3,7 @@ import BudgetPage from "@/pages/BudgetPage";
 
 export function App() {
   return (
-    <div>
+    <div className="p-4">
       <BudgetPage />
     </div>
   );
