@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/CurrencyInput";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -22,7 +23,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import BudgetTable from "@/components/BudgetTable";
 import type { Month } from "@/models/Month";
-import type { Pay } from "@/models/Pay";
 
 export default function BudgetPage() {
   const [currentMonth, setCurrentMonth] = useState<Month | null>(null);
@@ -63,7 +63,9 @@ export default function BudgetPage() {
   }
 
   async function handleMonthChange(monthId: string) {
-    const selectedMonth = availableMonths.find((m) => m.id === parseInt(monthId));
+    const selectedMonth = availableMonths.find(
+      (m) => m.id === parseInt(monthId),
+    );
     if (selectedMonth) {
       setCurrentMonth(selectedMonth);
     } else {
@@ -75,10 +77,8 @@ export default function BudgetPage() {
     }
   }
 
-  function handlePayChange(value: string) {
-    const newPay = parseFloat(value);
-    if (!isNaN(newPay) && newPay !== currentPay) {
-      setPendingPay(newPay);
+  function handlePayChange() {
+    if (!isNaN(pendingPay) && pendingPay !== currentPay) {
       setShowPayDialog(true);
     }
   }
@@ -135,11 +135,13 @@ export default function BudgetPage() {
 
           <div className="w-48">
             <Label htmlFor="pay-input">Pay</Label>
-            <Input
+            <CurrencyInput
               id="pay-input"
               type="number"
-              value={currentPay}
-              onChange={(e) => handlePayChange(e.target.value)}
+              value={pendingPay ?? currentPay}
+              onBlur={handlePayChange}
+              onKeyDown={(e) => e.key === "Enter" && handlePayChange()}
+              onChange={(e) => setPendingPay(Number(e.target.value))}
               className="w-24"
             />
           </div>
