@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { Label } from "@/components/ui/label";
+import { Loader, Check, AlertCircle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -24,6 +24,8 @@ import {
 import BudgetTable from "@/components/BudgetTable";
 import type { Month } from "@/models/Month";
 
+type Status = "idle" | "saving" | "loading" | "saved" | "error";
+
 export default function BudgetPage() {
   const [currentMonth, setCurrentMonth] = useState<Month | null>(null);
   const [availableMonths, setAvailableMonths] = useState<Month[]>([]);
@@ -31,6 +33,7 @@ export default function BudgetPage() {
   const [pendingPay, setPendingPay] = useState<number | null>(null);
   const [totalExpenses, setTotalExpenses] = useState<number>(0);
   const [showPayDialog, setShowPayDialog] = useState(false);
+  const [payStatus, setPayStatus] = useState<Status>("idle");
 
   useEffect(() => {
     initializePage();
@@ -55,10 +58,14 @@ export default function BudgetPage() {
   }
 
   async function fetchLatestPay() {
+    setPayStatus("loading");
     const res = await fetch("/api/pay/latest");
     const pay = await res.json();
     if (pay) {
+      setPayStatus("idle");
       setCurrentPay(pay.amount);
+    } else {
+      setPayStatus("error");
     }
   }
 
@@ -78,21 +85,32 @@ export default function BudgetPage() {
   }
 
   function handlePayChange() {
-    if (!isNaN(pendingPay) && pendingPay !== currentPay) {
+    if (
+      pendingPay !== null &&
+      !isNaN(pendingPay) &&
+      pendingPay !== currentPay
+    ) {
       setShowPayDialog(true);
     }
   }
 
   async function confirmPayChange() {
     if (pendingPay !== null) {
-      const res = await fetch("/api/pay", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: pendingPay }),
-      });
-      const newPay = await res.json();
-      setCurrentPay(newPay.amount);
-      setPendingPay(null);
+      try {
+        setPayStatus("saving");
+        const res = await fetch("/api/pay", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: pendingPay }),
+        });
+        const newPay = await res.json();
+        setCurrentPay(newPay.amount);
+        setPayStatus("saved");
+        setTimeout(() => setPayStatus("idle"), 1500);
+        setPendingPay(null);
+      } catch {
+        setPayStatus("error");
+      }
     }
     setShowPayDialog(false);
   }
@@ -112,7 +130,7 @@ export default function BudgetPage() {
         className="space-y-6"
       >
         <div className="flex items-end gap-4">
-          <div className="w-48">
+          <div className="w-48 space-y-2">
             <Label htmlFor="month-select">Month</Label>
             <Select
               value={currentMonth?.id?.toString() || ""}
@@ -133,17 +151,33 @@ export default function BudgetPage() {
             </Select>
           </div>
 
-          <div className="w-48">
-            <Label htmlFor="pay-input">Pay</Label>
-            <CurrencyInput
-              id="pay-input"
-              type="number"
-              value={pendingPay ?? currentPay}
-              onBlur={handlePayChange}
-              onKeyDown={(e) => e.key === "Enter" && handlePayChange()}
-              onChange={(e) => setPendingPay(Number(e.target.value))}
-              className="w-24"
-            />
+          <div className="relative w-48">
+            <div className="space-y-2">
+              <Label htmlFor="pay-input">Pay</Label>
+              <div className="flex items-center gap-2">
+                <CurrencyInput
+                  id="pay-input"
+                  value={pendingPay ?? currentPay}
+                  onBlur={handlePayChange}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) =>
+                    e.key === "Enter" && handlePayChange()
+                  }
+                  onChange={setPendingPay}
+                />
+              </div>
+
+              {(payStatus === "saving" || payStatus === "loading") && (
+                <Loader className="h-4 w-4 animate-spin text-muted-background" />
+              )}
+
+              {payStatus === "saved" && (
+                <Check className="h-4 w-4 text-green-500" />
+              )}
+
+              {payStatus === "error" && (
+                <AlertCircle className="h-4 w-4 text-red-500" />
+              )}
+            </div>
           </div>
         </div>
 

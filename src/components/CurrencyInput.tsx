@@ -1,14 +1,13 @@
-import { Input } from "@/components/ui/input";
+import { Input, InputProps } from "@/components/ui/input";
 import { forwardRef } from "react";
 
-type CurrencyInputProps = {
+type CurrencyInputProps = Omit<InputProps, "onChange" | "value"> & {
   value: number | string;
   onChange: (value: number) => void;
-  className?: string;
 };
 
 export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
-  ({ value, onChange, className }, ref) => {
+  ({ value, onChange, className, ...props }, ref) => {
     function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
       const raw = e.target.value.replace(/[^\d.]/g, "");
       onChange(Number(raw));
@@ -23,9 +22,11 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
         <Input
           ref={ref}
           type="text"
+          inputMode="decimal"
           value={value}
           onChange={handleChange}
           className={`pl-7 ${className ?? ""}`}
+          {...props}
         />
       </div>
     );
