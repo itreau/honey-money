@@ -32,11 +32,12 @@ const server = serve({
       },
     },
 
-    "/api/expenses": {
+    "/api/expenses/:year/:month": {
       async GET(req) {
-        const url = new URL(req.url);
-        const monthId = parseInt(url.searchParams.get("monthId") || "0");
-        const expenses = await repo.getExpensesByMonthId(monthId);
+        const year = parseInt(req.params.year);
+        const month = parseInt(req.params.month);
+        const monthEntry = await repo.getOrCreateMonth(year, month);
+        const expenses = await repo.getExpensesByMonthId(monthEntry.id);
         return Response.json(expenses);
       },
     },
@@ -45,8 +46,23 @@ const server = serve({
       async PATCH(req) {
         const id = parseInt(req.params.id);
         const body = await req.json();
-        await repo.updateExpense(id, body.amount);
+        await repo.updateExpense(id, body);
         return Response.json({ success: true });
+      },
+      async DELETE(req) {
+        const id = parseInt(req.params.id);
+        await repo.deleteExpense(id);
+        return Response.json({ success: true });
+      },
+    },
+
+    "/api/expenses/add/:year/:month": {
+      async POST(req) {
+        const year = parseInt(req.params.year);
+        const month = parseInt(req.params.month);
+        const monthEntry = await repo.getOrCreateMonth(year, month);
+        const expense = await repo.addExpense(monthEntry.id);
+        return Response.json(expense);
       },
     },
 

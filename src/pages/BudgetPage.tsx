@@ -11,16 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import BudgetTable from "@/components/BudgetTable";
 import type { Month } from "@/models/Month";
 
@@ -187,7 +179,8 @@ export default function BudgetPage() {
           </CardHeader>
           <CardContent>
             <BudgetTable
-              monthId={currentMonth?.id || null}
+              year={currentMonth?.year ?? null}
+              month={currentMonth?.month ?? null}
               onExpensesChange={setTotalExpenses}
             />
           </CardContent>
@@ -208,12 +201,10 @@ export default function BudgetPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowPayDialog(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmPayChange}>
-              Confirm
-            </AlertDialogAction>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button onClick={confirmPayChange} disabled={payStatus === "saving"}>
+              {payStatus === "saving" ? "Saving..." : "Confirm"}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
