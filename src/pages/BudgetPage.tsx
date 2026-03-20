@@ -11,10 +11,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import BudgetTable from "@/components/BudgetTable";
+import { ExpensesPieChart } from "@/components/ExpensesPieChart";
 import type { Month } from "@/models/Month";
+import type { Expense } from "@/models/Expense";
 
 type Status = "idle" | "saving" | "loading" | "saved" | "error";
 
@@ -23,13 +33,36 @@ export default function BudgetPage() {
   const [availableMonths, setAvailableMonths] = useState<Month[]>([]);
   const [currentPay, setCurrentPay] = useState<number>(0);
   const [pendingPay, setPendingPay] = useState<number | null>(null);
-  const [totalExpenses, setTotalExpenses] = useState<number>(0);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expensesLoading, setExpensesLoading] = useState(false);
   const [showPayDialog, setShowPayDialog] = useState(false);
   const [payStatus, setPayStatus] = useState<Status>("idle");
+
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
 
   useEffect(() => {
     initializePage();
   }, []);
+
+  useEffect(() => {
+    if (currentMonth) {
+      fetchExpenses();
+    }
+  }, [currentMonth?.id]);
+
+  async function fetchExpenses() {
+    if (!currentMonth) return;
+    setExpensesLoading(true);
+    try {
+      const res = await fetch(
+        `/api/expenses/${currentMonth.year}/${currentMonth.month}`,
+      );
+      const data = await res.json();
+      setExpenses(data);
+    } finally {
+      setExpensesLoading(false);
+    }
+  }
 
   async function initializePage() {
     await fetchAvailableMonths();
@@ -143,48 +176,49 @@ export default function BudgetPage() {
             </Select>
           </div>
 
-          <div className="relative w-48">
+          <div className="w-48">
             <div className="space-y-2">
               <Label htmlFor="pay-input">Pay</Label>
-              <div className="flex items-center gap-2">
+              <div className="relative flex items-center gap-2">
                 <CurrencyInput
                   id="pay-input"
                   value={pendingPay ?? currentPay}
                   onBlur={handlePayChange}
-                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) =>
-                    e.key === "Enter" && handlePayChange()
-                  }
                   onChange={setPendingPay}
                 />
+
+                {(payStatus === "saving" || payStatus === "loading") && (
+                  <Loader className="h-4 w-4 animate-spin text-muted-background" />
+                )}
+
+                {payStatus === "saved" && (
+                  <Check className="h-4 w-4 text-green-500" />
+                )}
+
+                {payStatus === "error" && (
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                )}
               </div>
-
-              {(payStatus === "saving" || payStatus === "loading") && (
-                <Loader className="h-4 w-4 animate-spin text-muted-background" />
-              )}
-
-              {payStatus === "saved" && (
-                <Check className="h-4 w-4 text-green-500" />
-              )}
-
-              {payStatus === "error" && (
-                <AlertCircle className="h-4 w-4 text-red-500" />
-              )}
             </div>
           </div>
         </div>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="text-center">
             <CardTitle>Monthly Budget</CardTitle>
           </CardHeader>
           <CardContent>
             <BudgetTable
+              expenses={expenses}
+              loading={expensesLoading}
               year={currentMonth?.year ?? null}
               month={currentMonth?.month ?? null}
-              onExpensesChange={setTotalExpenses}
+              onExpensesChange={setExpenses}
             />
           </CardContent>
         </Card>
+
+        <ExpensesPieChart expenses={expenses} />
 
         <div className="text-lg font-semibold">
           Remaining Budget: ${remainingBudget.toFixed(2)}
@@ -202,7 +236,10 @@ export default function BudgetPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button onClick={confirmPayChange} disabled={payStatus === "saving"}>
+            <Button
+              onClick={confirmPayChange}
+              disabled={payStatus === "saving"}
+            >
               {payStatus === "saving" ? "Saving..." : "Confirm"}
             </Button>
           </AlertDialogFooter>

@@ -7,45 +7,23 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ExpenseRow } from "./ExpenseRow";
-import { useEffect, useState } from "react";
 import type { Expense } from "@/models/Expense";
 
 interface BudgetTableProps {
+  expenses: Expense[];
+  loading: boolean;
   year: number | null;
   month: number | null;
-  onExpensesChange?: (total: number) => void;
+  onExpensesChange: (expenses: Expense[]) => void;
 }
 
 export default function BudgetTable({
+  expenses,
+  loading,
   year,
   month,
   onExpensesChange,
 }: BudgetTableProps) {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (year && month) {
-      loadExpenses();
-    }
-  }, [year, month]);
-
-  useEffect(() => {
-    const total = expenses.reduce((sum, e) => sum + e.amount, 0);
-    onExpensesChange?.(total);
-  }, [expenses]);
-
-  async function loadExpenses() {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/expenses/${year}/${month}`);
-      const data = await res.json();
-      setExpenses(data);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function updateExpense(
     id: number,
     updates: { category?: string; budget?: number; amount?: number },
@@ -56,15 +34,15 @@ export default function BudgetTable({
       body: JSON.stringify(updates),
     });
 
-    setExpenses((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, ...updates } : e)),
+    onExpensesChange(
+      expenses.map((e) => (e.id === id ? { ...e, ...updates } : e)),
     );
   }
 
   async function deleteExpense(id: number) {
     await fetch(`/api/expenses/${id}`, { method: "DELETE" });
 
-    setExpenses((prev) => prev.filter((e) => e.id !== id));
+    onExpensesChange(expenses.filter((e) => e.id !== id));
   }
 
   async function addExpense() {
@@ -75,7 +53,7 @@ export default function BudgetTable({
 
     const data = await res.json();
 
-    setExpenses((prev) => [...prev, data]);
+    onExpensesChange([...expenses, data]);
   }
 
   if (loading) {
