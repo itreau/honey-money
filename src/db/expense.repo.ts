@@ -1,5 +1,6 @@
 import { db } from "./client";
 import type { Expense } from "@/models/Expense";
+import { getMonthByYearMonth } from "./month.repo";
 
 export async function getExpensesByMonthId(
   monthId: number,
@@ -46,10 +47,13 @@ export async function deleteExpense(id: number): Promise<void> {
   });
 }
 
-export async function addExpense(monthId: number): Promise<Expense> {
+export async function addExpense(monthId: number, data?: { category?: string; budget?: number }): Promise<Expense> {
+  const category = data?.category ?? "";
+  const budget = data?.budget ?? 0;
+
   await db.execute({
-    sql: "INSERT INTO expenses (month_id, category, budget, amount, note) VALUES (?, '', 0, 0, NULL)",
-    args: [monthId],
+    sql: "INSERT INTO expenses (month_id, category, budget, amount, note) VALUES (?, ?, ?, 0, NULL)",
+    args: [monthId, category, budget],
   });
 
   const result = await db.execute({
@@ -58,4 +62,21 @@ export async function addExpense(monthId: number): Promise<Expense> {
   });
 
   return result.rows[0] as unknown as Expense;
+}
+
+export async function getPreviousMonthExpenses(year: number, month: number): Promise<Expense[]> {
+  let prevYear = year;
+  let prevMonth = month - 1;
+
+  if (prevMonth === 0) {
+    prevMonth = 12;
+    prevYear = year - 1;
+  }
+
+  const prevMonthEntry = await getMonthByYearMonth(prevYear, prevMonth);
+  if (!prevMonthEntry) {
+    return [];
+  }
+
+  return getExpensesByMonthId(prevMonthEntry.id);
 }
