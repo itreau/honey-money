@@ -64,12 +64,12 @@ export default function BudgetTable({
   }
 
   async function handlePaste(targetId: number, sourceExpense: Expense) {
-    await updateExpense(targetId, {
+    const updates = {
       category: sourceExpense.category,
       budget: sourceExpense.budget,
       amount: sourceExpense.amount,
-    });
-    setCopiedExpense(null);
+    };
+    await updateExpense(targetId, updates);
   }
 
   if (loading) {
@@ -108,6 +108,7 @@ export default function BudgetTable({
               onDelete={deleteExpense}
               onCopy={handleCopy}
               onPaste={handlePaste}
+              onClearCopied={() => setCopiedExpense(null)}
               hasCopiedExpense={copiedExpense !== null}
             />
           ))}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -23,20 +23,28 @@ interface ExpenseRowProps {
   onDelete: (id: number) => void;
   onCopy: (expense: Expense) => void;
   onPaste: (targetId: number, sourceExpense: Expense) => void;
+  onClearCopied: () => void;
   hasCopiedExpense: boolean;
 }
 
-export function ExpenseRow({ expense, copiedExpense, onUpdate, onDelete, onCopy, onPaste, hasCopiedExpense }: ExpenseRowProps) {
+export function ExpenseRow({ expense, copiedExpense, onUpdate, onDelete, onCopy, onPaste, onClearCopied, hasCopiedExpense }: ExpenseRowProps) {
   const [category, setCategory] = useState(expense.category);
   const [budget, setBudget] = useState(expense.budget);
   const [amount, setAmount] = useState(expense.amount);
   const [showPasteDialog, setShowPasteDialog] = useState(false);
 
+  useEffect(() => {
+    setCategory(expense.category);
+    setBudget(expense.budget);
+    setAmount(expense.amount);
+  }, [expense.category, expense.budget, expense.amount]);
+
   const remaining = budget - amount;
 
-  function confirmPaste() {
+  async function confirmPaste() {
     if (copiedExpense) {
-      onPaste(expense.id, copiedExpense);
+      await onPaste(expense.id, copiedExpense);
+      onClearCopied();
     }
     setShowPasteDialog(false);
   }
