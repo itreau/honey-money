@@ -34,17 +34,17 @@ export function ExpenseRow({ expense, copiedExpense, onUpdate, onDelete, onCopy,
 
   const remaining = budget - amount;
 
-  function handleRowClick() {
-    if (hasCopiedExpense && copiedExpense?.id !== expense.id) {
-      setShowPasteDialog(true);
-    }
-  }
-
   function confirmPaste() {
     if (copiedExpense) {
       onPaste(expense.id, copiedExpense);
     }
     setShowPasteDialog(false);
+  }
+
+  function handleRowClick(e: React.MouseEvent) {
+    if (hasCopiedExpense && copiedExpense?.id !== expense.id) {
+      setShowPasteDialog(true);
+    }
   }
 
   async function handleCategoryBlur() {
@@ -68,7 +68,10 @@ export function ExpenseRow({ expense, copiedExpense, onUpdate, onDelete, onCopy,
   return (
     <TableRow
       className={hasCopiedExpense && copiedExpense?.id !== expense.id ? "cursor-pointer hover:bg-muted/50" : ""}
-      onClick={handleRowClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        handleRowClick(e);
+      }}
     >
       <TableCell>
         <Input
@@ -145,8 +148,8 @@ export function ExpenseRow({ expense, copiedExpense, onUpdate, onDelete, onCopy,
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowPasteDialog(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmPaste}>Paste</AlertDialogAction>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button onClick={confirmPaste}>Paste</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
