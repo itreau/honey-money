@@ -61,6 +61,18 @@ const server = serve({
         const year = parseInt(req.params.year);
         const month = parseInt(req.params.month);
         const monthEntry = await repo.getOrCreateMonth(year, month);
+
+        const prevExpenses = await repo.getPreviousMonthExpenses(year, month);
+
+        if (prevExpenses.length > 0) {
+          const lastExpense = prevExpenses[prevExpenses.length - 1];
+          const expense = await repo.addExpense(monthEntry.id, {
+            category: lastExpense.category,
+            budget: lastExpense.budget,
+          });
+          return Response.json(expense);
+        }
+
         const expense = await repo.addExpense(monthEntry.id);
         return Response.json(expense);
       },

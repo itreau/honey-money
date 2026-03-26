@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -24,6 +25,8 @@ export default function BudgetTable({
   month,
   onExpensesChange,
 }: BudgetTableProps) {
+  const [copiedExpense, setCopiedExpense] = useState<Expense | null>(null);
+
   async function updateExpense(
     id: number,
     updates: { category?: string; budget?: number; amount?: number },
@@ -54,6 +57,19 @@ export default function BudgetTable({
     const data = await res.json();
 
     onExpensesChange([...expenses, data]);
+  }
+
+  function handleCopy(expense: Expense) {
+    setCopiedExpense(expense);
+  }
+
+  async function handlePaste(targetId: number, sourceExpense: Expense) {
+    const updates = {
+      category: sourceExpense.category,
+      budget: sourceExpense.budget,
+      amount: sourceExpense.amount,
+    };
+    await updateExpense(targetId, updates);
   }
 
   if (loading) {
@@ -87,8 +103,13 @@ export default function BudgetTable({
             <ExpenseRow
               key={expense.id}
               expense={expense}
+              copiedExpense={copiedExpense}
               onUpdate={updateExpense}
               onDelete={deleteExpense}
+              onCopy={handleCopy}
+              onPaste={handlePaste}
+              onClearCopied={() => setCopiedExpense(null)}
+              hasCopiedExpense={copiedExpense !== null}
             />
           ))}
         </TableBody>
