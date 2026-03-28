@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { CurrencyInput } from "@/components/CurrencyInput";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Copy } from "lucide-react";
+import { Trash2, Copy, Check } from "lucide-react";
 import type { Expense } from "@/models/Expense";
 
 interface ExpenseRowProps {
@@ -32,6 +33,7 @@ export function ExpenseRow({ expense, copiedExpense, onUpdate, onDelete, onCopy,
   const [budget, setBudget] = useState(expense.budget);
   const [amount, setAmount] = useState(expense.amount);
   const [showPasteDialog, setShowPasteDialog] = useState(false);
+  const [showCopiedFeedback, setShowCopiedFeedback] = useState(false);
 
   useEffect(() => {
     setCategory(expense.category);
@@ -91,19 +93,17 @@ export function ExpenseRow({ expense, copiedExpense, onUpdate, onDelete, onCopy,
         />
       </TableCell>
       <TableCell>
-        <Input
-          type="number"
+        <CurrencyInput
           value={budget}
-          onChange={(e) => setBudget(Number(e.target.value))}
+          onChange={(value: number) => setBudget(value)}
           onBlur={handleBudgetBlur}
           className="w-24"
         />
       </TableCell>
       <TableCell>
-        <Input
-          type="number"
+        <CurrencyInput
           value={amount}
-          onChange={(e) => setAmount(Number(e.target.value))}
+          onChange={(value: number) => setAmount(value)}
           onBlur={handleAmountBlur}
           className="w-24"
         />
@@ -119,9 +119,11 @@ export function ExpenseRow({ expense, copiedExpense, onUpdate, onDelete, onCopy,
             onClick={(e) => {
               e.stopPropagation();
               onCopy(expense);
+              setShowCopiedFeedback(true);
+              setTimeout(() => setShowCopiedFeedback(false), 2000);
             }}
           >
-            <Copy className="h-4 w-4" />
+            {showCopiedFeedback ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
