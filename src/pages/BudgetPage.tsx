@@ -23,19 +23,23 @@ import {
 import { Button } from "@/components/ui/button";
 import BudgetTable from "@/components/BudgetTable";
 import { ExpensesPieChart } from "@/components/ExpensesPieChart";
-import type { Month } from "@/models/Month";
 import type { Expense } from "@/models/Expense";
 
 type Status = "idle" | "saving" | "loading" | "saved" | "error";
 
 export default function BudgetPage() {
-  const [currentMonth, setCurrentMonth] = useState<Month | null>(null);
-  const [availableMonths, setAvailableMonths] = useState<Month[]>([]);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [dbYears, setDbYears] = useState<number[]>([]);
+  const [monthExists, setMonthExists] = useState<boolean | null>(null);
   const [currentPay, setCurrentPay] = useState<number>(0);
   const [pendingPay, setPendingPay] = useState<number | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [expensesLoading, setExpensesLoading] = useState(false);
   const [showPayDialog, setShowPayDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [payStatus, setPayStatus] = useState<Status>("idle");
 
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -45,41 +49,55 @@ export default function BudgetPage() {
   }, []);
 
   useEffect(() => {
-    if (currentMonth) {
+    if (selectedYear !== null && selectedMonth !== null) {
       fetchExpenses();
     }
-  }, [currentMonth?.id]);
+  }, [selectedYear, selectedMonth]);
+
+  useEffect(() => {
+    const currentYear = new Date().getFullYear();
+    const allYears = new Set<number>([
+      ...dbYears,
+      currentYear,
+      currentYear - 1,
+      currentYear + 1,
+    ]);
+    setAvailableYears(Array.from(allYears).sort((a, b) => b - a));
+  }, [dbYears]);
 
   async function fetchExpenses() {
-    if (!currentMonth) return;
+    if (selectedYear === null || selectedMonth === null) return;
     setExpensesLoading(true);
+    setMonthExists(null);
     try {
       const res = await fetch(
-        `/api/expenses/${currentMonth.year}/${currentMonth.month}`,
+        `/api/expenses/${selectedYear}/${selectedMonth}`,
       );
       const data = await res.json();
-      setExpenses(data);
+      setExpenses(data.expenses);
+      setMonthExists(data.monthExists);
     } finally {
       setExpensesLoading(false);
     }
   }
 
   async function initializePage() {
-    await fetchAvailableMonths();
+    await fetchDbYears();
     await fetchCurrentMonth();
     await fetchLatestPay();
   }
 
-  async function fetchAvailableMonths() {
-    const res = await fetch("/api/months");
-    const months = await res.json();
-    setAvailableMonths(months);
+  async function fetchDbYears() {
+    const res = await fetch("/api/years");
+    const years = await res.json();
+    setDbYears(years);
   }
 
   async function fetchCurrentMonth() {
     const res = await fetch("/api/months/current", { method: "POST" });
     const month = await res.json();
-    setCurrentMonth(month);
+    setSelectedYear(month.year);
+    setSelectedMonth(month.month);
   }
 
   async function fetchLatestPay() {
@@ -94,19 +112,16 @@ export default function BudgetPage() {
     }
   }
 
-  async function handleMonthChange(monthId: string) {
-    const selectedMonth = availableMonths.find(
-      (m) => m.id === parseInt(monthId),
-    );
-    if (selectedMonth) {
-      setCurrentMonth(selectedMonth);
-    } else {
-      const [year, month] = monthId.split("-").map(Number);
-      const res = await fetch(`/api/months/${year}/${month}`);
-      const newMonth = await res.json();
-      setCurrentMonth(newMonth);
-      await fetchAvailableMonths();
-    }
+  function handleYearChange(year: string) {
+    const newYear = parseInt(year);
+    setSelectedYear(newYear);
+    setSelectedMonth(null);
+    setMonthExists(null);
+  }
+
+  function handleMonthChange(month: string) {
+    const newMonth = parseInt(month);
+    setSelectedMonth(newMonth);
   }
 
   function handlePayChange() {
@@ -140,12 +155,44 @@ export default function BudgetPage() {
     setShowPayDialog(false);
   }
 
-  function formatMonth(month: Month): string {
-    const date = new Date(month.year, month.month - 1);
-    return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  async function handleCreateFromPrevious() {
+    setShowCreateDialog(true);
+  }
+
+  async function confirmCreateFromPrevious() {
+    if (selectedYear === null || selectedMonth === null) return;
+    
+    try {
+      setIsCreating(true);
+      const res = await fetch(
+        `/api/months/${selectedYear}/${selectedMonth}/create-from-previous`,
+        { method: "POST" }
+      );
+      const data = await res.json();
+      setExpenses(data.expenses);
+      setMonthExists(true);
+      setDbYears((prev) => {
+        if (!prev.includes(selectedYear)) {
+          return [...prev, selectedYear].sort((a, b) => b - a);
+        }
+        return prev;
+      });
+    } finally {
+      setIsCreating(false);
+      setShowCreateDialog(false);
+    }
   }
 
   const remainingBudget = currentPay - totalExpenses;
+
+  function formatMonth(month: number): string {
+    const date = new Date(2000, month - 1);
+    return date.toLocaleDateString("en-US", { month: "long" });
+  }
+
+  const monthsInYear = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+  const showCreateButton = monthExists === false && !expensesLoading;
 
   return (
     <div className="min-h-screen bg-muted/40 p-6">
@@ -155,21 +202,43 @@ export default function BudgetPage() {
         className="space-y-6"
       >
         <div className="flex items-end gap-4">
-          <div className="w-48 space-y-2">
-            <Label htmlFor="month-select">Month</Label>
+          <div className="w-32 space-y-2">
+            <Label htmlFor="year-select">Year</Label>
             <Select
-              value={currentMonth?.id?.toString() || ""}
-              onValueChange={handleMonthChange}
+              value={selectedYear?.toString() || ""}
+              onValueChange={handleYearChange}
             >
-              <SelectTrigger id="month-select">
-                <SelectValue placeholder="Select month">
-                  {currentMonth && formatMonth(currentMonth)}
+              <SelectTrigger id="year-select">
+                <SelectValue placeholder="Select year">
+                  {selectedYear}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {availableMonths.map((month) => (
-                  <SelectItem key={month.id} value={month.id.toString()}>
-                    {formatMonth(month)}
+                {availableYears.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-40 space-y-2">
+            <Label htmlFor="month-select">Month</Label>
+            <Select
+              value={selectedMonth?.toString() || ""}
+              onValueChange={handleMonthChange}
+              disabled={selectedYear === null}
+            >
+              <SelectTrigger id="month-select">
+                <SelectValue placeholder="Select month">
+                  {selectedMonth && formatMonth(selectedMonth)}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {monthsInYear.map((m) => (
+                  <SelectItem key={m} value={m.toString()}>
+                    {formatMonth(m)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -208,13 +277,24 @@ export default function BudgetPage() {
             <CardTitle>Monthly Budget</CardTitle>
           </CardHeader>
           <CardContent>
-            <BudgetTable
-              expenses={expenses}
-              loading={expensesLoading}
-              year={currentMonth?.year ?? null}
-              month={currentMonth?.month ?? null}
-              onExpensesChange={setExpenses}
-            />
+            {showCreateButton ? (
+              <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                <p className="text-muted-foreground text-center">
+                  No expense sheet exists for this month.
+                </p>
+                <Button onClick={handleCreateFromPrevious}>
+                  Create Expense Sheet From Previous
+                </Button>
+              </div>
+            ) : (
+              <BudgetTable
+                expenses={expenses}
+                loading={expensesLoading}
+                year={selectedYear}
+                month={selectedMonth}
+                onExpensesChange={setExpenses}
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -241,6 +321,23 @@ export default function BudgetPage() {
               disabled={payStatus === "saving"}
             >
               {payStatus === "saving" ? "Saving..." : "Confirm"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create Expense Sheet?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will create a new expense sheet for {selectedMonth && formatMonth(selectedMonth)} {selectedYear} by copying expenses from the previous month. Do you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button onClick={confirmCreateFromPrevious} disabled={isCreating}>
+              {isCreating ? "Creating..." : "Create"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

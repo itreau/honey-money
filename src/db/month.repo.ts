@@ -52,3 +52,47 @@ export async function getOrCreateMonth(year: number, month: number): Promise<Mon
   
   return newMonth;
 }
+
+export async function getAvailableYears(): Promise<number[]> {
+  const result = await db.execute({
+    sql: "SELECT DISTINCT year FROM months ORDER BY year DESC",
+  });
+  return result.rows.map((row) => row.year as number);
+}
+
+export async function monthExists(year: number, month: number): Promise<boolean> {
+  const result = await db.execute({
+    sql: "SELECT id FROM months WHERE year = ? AND month = ?",
+    args: [year, month],
+  });
+  return result.rows.length > 0;
+}
+
+export async function createMonthFromPrevious(year: number, month: number): Promise<Month> {
+  const newMonth = await createMonth(year, month);
+
+  let prevYear = year;
+  let prevMonth = month - 1;
+  if (prevMonth === 0) {
+    prevMonth = 12;
+    prevYear = year - 1;
+  }
+
+  const prevMonthEntry = await getMonthByYearMonth(prevYear, prevMonth);
+  if (prevMonthEntry) {
+    const templates = await getTemplates();
+    const expenses = await db.execute({
+      sql: "SELECT * FROM expenses WHERE month_id = ?",
+      args: [prevMonthEntry.id],
+    });
+
+    for (const expense of expenses.rows as any[]) {
+      await db.execute({
+        sql: "INSERT INTO expenses (month_id, category, budget, amount, note) VALUES (?, ?, ?, ?, ?)",
+        args: [newMonth.id, expense.category, expense.budget ?? 0, expense.amount ?? 0, expense.note ?? null],
+      });
+    }
+  }
+
+  return newMonth;
+}

@@ -6,6 +6,13 @@ const server = serve({
   routes: {
     "/*": index,
 
+    "/api/years": {
+      async GET() {
+        const years = await repo.getAvailableYears();
+        return Response.json(years);
+      },
+    },
+
     "/api/months": {
       async GET() {
         const months = await repo.getAllMonths();
@@ -36,9 +43,29 @@ const server = serve({
       async GET(req) {
         const year = parseInt(req.params.year);
         const month = parseInt(req.params.month);
-        const monthEntry = await repo.getOrCreateMonth(year, month);
+        const exists = await repo.monthExists(year, month);
+        
+        if (!exists) {
+          return Response.json({ expenses: [], monthExists: false });
+        }
+        
+        const monthEntry = await repo.getMonthByYearMonth(year, month);
+        if (!monthEntry) {
+          return Response.json({ expenses: [], monthExists: false });
+        }
+        
         const expenses = await repo.getExpensesByMonthId(monthEntry.id);
-        return Response.json(expenses);
+        return Response.json({ expenses, monthExists: true });
+      },
+    },
+
+    "/api/months/:year/:month/create-from-previous": {
+      async POST(req) {
+        const year = parseInt(req.params.year);
+        const month = parseInt(req.params.month);
+        const monthEntry = await repo.createMonthFromPrevious(year, month);
+        const expenses = await repo.getExpensesByMonthId(monthEntry.id);
+        return Response.json({ month: monthEntry, expenses });
       },
     },
 
