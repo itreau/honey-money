@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import {
   Table,
   TableBody,
@@ -18,19 +18,19 @@ interface BudgetTableProps {
   onExpensesChange: (expenses: Expense[]) => void;
 }
 
-export default function BudgetTable({
+const BudgetTableComponent = ({
   expenses,
   loading,
   year,
   month,
   onExpensesChange,
-}: BudgetTableProps) {
+}: BudgetTableProps) => {
   const [copiedExpense, setCopiedExpense] = useState<Expense | null>(null);
 
-  async function updateExpense(
+  const updateExpense = useCallback(async (
     id: number,
     updates: { category?: string; budget?: number; amount?: number },
-  ) {
+  ) => {
     await fetch(`/api/expenses/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -40,15 +40,15 @@ export default function BudgetTable({
     onExpensesChange(
       expenses.map((e) => (e.id === id ? { ...e, ...updates } : e)),
     );
-  }
+  }, [expenses, onExpensesChange]);
 
-  async function deleteExpense(id: number) {
+  const deleteExpense = useCallback(async (id: number) => {
     await fetch(`/api/expenses/${id}`, { method: "DELETE" });
 
     onExpensesChange(expenses.filter((e) => e.id !== id));
-  }
+  }, [expenses, onExpensesChange]);
 
-  async function addExpense() {
+  const addExpense = useCallback(async () => {
     const res = await fetch(`/api/expenses/add/${year}/${month}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -57,20 +57,24 @@ export default function BudgetTable({
     const data = await res.json();
 
     onExpensesChange([...expenses, data]);
-  }
+  }, [year, month, expenses, onExpensesChange]);
 
-  function handleCopy(expense: Expense) {
+  const handleCopy = useCallback((expense: Expense) => {
     setCopiedExpense(expense);
-  }
+  }, []);
 
-  async function handlePaste(targetId: number, sourceExpense: Expense) {
+  const handlePaste = useCallback(async (targetId: number, sourceExpense: Expense) => {
     const updates = {
       category: sourceExpense.category,
       budget: sourceExpense.budget,
       amount: sourceExpense.amount,
     };
     await updateExpense(targetId, updates);
-  }
+  }, [updateExpense]);
+
+  const handleClearCopied = useCallback(() => {
+    setCopiedExpense(null);
+  }, []);
 
   if (loading) {
     return (
@@ -116,4 +120,6 @@ export default function BudgetTable({
       </Table>
     </div>
   );
-}
+};
+
+export default memo(BudgetTableComponent);
