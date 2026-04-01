@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CurrencyInput } from "@/components/CurrencyInput";
@@ -42,7 +42,14 @@ export default function BudgetPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [payStatus, setPayStatus] = useState<Status>("idle");
 
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenses = useMemo(() => 
+    expenses.reduce((sum, e) => sum + e.amount, 0),
+    [expenses]
+  );
+
+  const handleExpensesChange = useCallback((newExpenses: Expense[]) => {
+    setExpenses(newExpenses);
+  }, []);
 
   useEffect(() => {
     initializePage();
@@ -292,7 +299,7 @@ export default function BudgetPage() {
                 loading={expensesLoading}
                 year={selectedYear}
                 month={selectedMonth}
-                onExpensesChange={setExpenses}
+                onExpensesChange={handleExpensesChange}
               />
             )}
           </CardContent>

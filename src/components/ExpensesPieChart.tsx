@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { Pie, PieChart, Cell } from "recharts";
 import {
   ChartContainer,
@@ -31,14 +32,18 @@ const chartConfig = {
   },
 };
 
-export function ExpensesPieChart({ expenses }: ExpensesPieChartProps) {
-  const data = expenses
-    .filter((e) => e.amount > 0)
-    .map((e, index) => ({
-      name: e.category || "Uncategorized",
-      value: e.amount,
-      fill: COLORS[index % COLORS.length],
-    }));
+const ExpensesPieChartComponent = ({ expenses }: ExpensesPieChartProps) => {
+  const data = useMemo(
+    () =>
+      expenses
+        .filter((e) => e.amount > 0)
+        .map((e, index) => ({
+          name: e.category || "Uncategorized",
+          value: e.amount,
+          fill: COLORS[index % COLORS.length],
+        })),
+    [expenses]
+  );
 
   if (data.length === 0) {
     return (
@@ -75,4 +80,6 @@ export function ExpensesPieChart({ expenses }: ExpensesPieChartProps) {
       </ChartContainer>
     </div>
   );
-}
+};
+
+export const ExpensesPieChart = memo(ExpensesPieChartComponent);

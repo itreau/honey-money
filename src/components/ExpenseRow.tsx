@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ interface ExpenseRowProps {
   hasCopiedExpense: boolean;
 }
 
-export function ExpenseRow({
+const ExpenseRowComponent = ({
   expense,
   copiedExpense,
   onUpdate,
@@ -39,19 +39,28 @@ export function ExpenseRow({
   onPaste,
   onClearCopied,
   hasCopiedExpense,
-}: ExpenseRowProps) {
+}: ExpenseRowProps) => {
   const [category, setCategory] = useState(expense.category);
   const [budget, setBudget] = useState(expense.budget);
   const [amount, setAmount] = useState(expense.amount);
   const [showPasteDialog, setShowPasteDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCopiedFeedback, setShowCopiedFeedback] = useState(false);
+  const prevExpenseRef = useRef(expense);
 
   useEffect(() => {
-    setCategory(expense.category);
-    setBudget(expense.budget);
-    setAmount(expense.amount);
-  }, [expense.category, expense.budget, expense.amount]);
+    if (
+      prevExpenseRef.current.id !== expense.id ||
+      prevExpenseRef.current.category !== expense.category ||
+      prevExpenseRef.current.budget !== expense.budget ||
+      prevExpenseRef.current.amount !== expense.amount
+    ) {
+      setCategory(expense.category);
+      setBudget(expense.budget);
+      setAmount(expense.amount);
+      prevExpenseRef.current = expense;
+    }
+  }, [expense]);
 
   const remaining = budget - amount;
 
@@ -199,4 +208,6 @@ export function ExpenseRow({
       </AlertDialog>
     </>
   );
-}
+};
+
+export const ExpenseRow = memo(ExpenseRowComponent);
