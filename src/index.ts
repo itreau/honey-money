@@ -38,28 +38,32 @@ const server = serve({
         return Response.json(sheets);
       },
       async POST(req) {
-        const year = parseInt(req.params.year);
-        const month = parseInt(req.params.month);
-        const body = await req.json();
-        const name = body.name || "Main";
-        const copyFromMonthId = body.copyFromMonthId;
+        try {
+          const year = parseInt(req.params.year);
+          const month = parseInt(req.params.month);
+          const body = await req.json();
+          const name = body?.name || "Main";
+          const copyFromMonthId = body?.copyFromMonthId ? parseInt(body.copyFromMonthId) : null;
 
-        let sheet;
-        if (copyFromMonthId) {
-          sheet = await repo.createSheetFromPrevious(year, month, name, copyFromMonthId);
-        } else {
-          sheet = await repo.createSheet(year, month, name);
+          let sheet;
+          if (copyFromMonthId) {
+            sheet = await repo.createSheetFromPrevious(year, month, name, copyFromMonthId);
+          } else {
+            sheet = await repo.createSheet(year, month, name);
+          }
+
+          const expenses = await repo.getExpensesByMonthId(sheet.id);
+          return Response.json({ month: sheet, expenses });
+        } catch (error) {
+          console.error("Error creating sheet:", error);
+          return Response.json({ error: "Failed to create sheet" }, { status: 500 });
         }
-
-        const expenses = await repo.getExpensesByMonthId(sheet.id);
-        return Response.json({ month: sheet, expenses });
       },
     },
 
     "/api/sheets/:id": {
       async DELETE(req) {
         const id = parseInt(req.params.id);
-        const count = await repo.countSheetsByYearMonth(0, 0);
         await repo.deleteSheet(id);
         return Response.json({ success: true });
       },

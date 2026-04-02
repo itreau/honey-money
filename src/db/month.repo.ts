@@ -34,14 +34,9 @@ export async function getMonthById(id: number): Promise<Month | null> {
 }
 
 export async function createSheet(year: number, month: number, name: string): Promise<Month> {
-  await db.execute({
-    sql: "INSERT INTO months (year, month, name) VALUES (?, ?, ?)",
-    args: [year, month, name],
-  });
-
   const result = await db.execute({
-    sql: "SELECT * FROM months WHERE rowid = last_insert_rowid()",
-    args: [],
+    sql: "INSERT INTO months (year, month, name) VALUES (?, ?, ?) RETURNING *",
+    args: [year, month, name],
   });
 
   const newMonth = result.rows[0] as unknown as Month;
