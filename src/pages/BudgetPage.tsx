@@ -72,16 +72,18 @@ export default function BudgetPage() {
   const handleYearChange = useCallback((direction: "prev" | "next") => {
     if (selectedYear === null) return;
     const newYear = direction === "next" ? selectedYear + 1 : selectedYear - 1;
+    const currentMonth = new Date().getMonth() + 1;
     setSelectedYear(newYear);
-    setSelectedMonth(null);
+    setSelectedMonth(currentMonth);
     setMonthExists(null);
   }, [selectedYear]);
 
   const handleYearSelect = useCallback((year: string) => {
     const newYear = parseInt(year);
     if (newYear !== selectedYear) {
+      const currentMonth = new Date().getMonth() + 1;
       setSelectedYear(newYear);
-      setSelectedMonth(null);
+      setSelectedMonth(currentMonth);
       setMonthExists(null);
     }
   }, [selectedYear]);
