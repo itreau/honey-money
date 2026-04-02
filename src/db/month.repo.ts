@@ -34,17 +34,25 @@ export async function getMonthById(id: number): Promise<Month | null> {
 }
 
 export async function createSheet(year: number, month: number, name: string): Promise<Month> {
-  const result = await db.execute({
-    sql: "INSERT INTO months (year, month, name) VALUES (?, ?, ?) RETURNING *",
+  await db.execute({
+    sql: "INSERT INTO months (year, month, name) VALUES (?, ?, ?)",
     args: [year, month, name],
   });
 
-  const newMonth = result.rows[0] as unknown as Month;
+  const newMonth = await getMonthByYearMonthAndName(year, month, name);
   if (!newMonth) throw new Error("Failed to create sheet");
 
   await applyTemplatesToMonth(newMonth.id);
 
   return newMonth;
+}
+
+export async function getMonthByYearMonthAndName(year: number, month: number, name: string): Promise<Month | null> {
+  const result = await db.execute({
+    sql: "SELECT * FROM months WHERE year = ? AND month = ? AND name = ? LIMIT 1",
+    args: [year, month, name],
+  });
+  return (result.rows[0] as unknown as Month) || null;
 }
 
 export async function createSheetFromPrevious(year: number, month: number, name: string, copyFromMonthId?: number): Promise<Month> {
