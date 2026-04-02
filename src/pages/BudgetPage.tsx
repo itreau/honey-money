@@ -227,29 +227,18 @@ export default function BudgetPage() {
         }
       );
 
-      if (!res.ok) {
-        throw new Error("Failed to create sheet");
-      }
-
       const data = await res.json();
-      if (!data.month) {
-        throw new Error("Invalid response");
-      }
-
       setExpenses(data.expenses || []);
       setMonthExists(true);
       setSheets([data.month]);
       setSelectedSheet(data.month);
-    } catch (error) {
-      console.error("Error creating sheet:", error);
-      alert("Failed to create sheet. Please try again.");
     } finally {
       setIsCreating(false);
       setShowCreateDialog(false);
     }
   }
 
-  async function handleCreateNewSheet() {
+async function handleCreateNewSheet() {
     if (selectedYear === null || selectedMonth === null || !newSheetName.trim()) return;
 
     try {
@@ -266,22 +255,11 @@ export default function BudgetPage() {
         }
       );
 
-      if (!res.ok) {
-        throw new Error("Failed to create sheet");
-      }
-
       const data = await res.json();
-      if (!data.month) {
-        throw new Error("Invalid response");
-      }
-
-      setSheets((prev) => [...prev, data.month].filter(Boolean));
+      setSheets((prev) => [...prev, data.month]);
       setSelectedSheet(data.month);
       setNewSheetName("");
       setCopyFromSheetId(null);
-    } catch (error) {
-      console.error("Error creating sheet:", error);
-      alert("Failed to create sheet. Please try again.");
     } finally {
       setIsCreating(false);
       setShowNewSheetDialog(false);
@@ -402,7 +380,7 @@ export default function BudgetPage() {
                       <SelectValue placeholder="Select sheet" />
                     </SelectTrigger>
                     <SelectContent>
-                      {sheets.filter(Boolean).map((sheet) => (
+                      {sheets.map((sheet) => (
                         <SelectItem key={sheet.id} value={sheet.id.toString()}>
                           {sheet.name}
                         </SelectItem>
@@ -574,7 +552,7 @@ export default function BudgetPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None (start empty)</SelectItem>
-                  {sheets.filter(Boolean).map((sheet) => (
+                  {sheets.map((sheet) => (
                     <SelectItem key={sheet.id} value={sheet.id.toString()}>
                       {sheet.name}
                     </SelectItem>
