@@ -447,34 +447,36 @@ export default function BudgetPage() {
 
         {selectedSheet && <ExpensesPieChart expenses={expenses} />}
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="pay-input-bottom" className="text-lg font-semibold">
-              Pay:
-            </Label>
-            <div className="relative flex items-center gap-2">
-              <CurrencyInput
-                id="pay-input-bottom"
-                value={pendingPay ?? currentPay}
-                onBlur={handlePayChange}
-                onChange={setPendingPay}
-              />
-              {(payStatus === "saving" || payStatus === "loading") && (
-                <Loader className="h-4 w-4 animate-spin text-muted-background" />
-              )}
-              {payStatus === "saved" && (
-                <Check className="h-4 w-4 text-green-500" />
-              )}
-              {payStatus === "error" && (
-                <AlertCircle className="h-4 w-4 text-red-500" />
-              )}
+        {selectedSheet && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="pay-input-bottom" className="text-lg font-semibold">
+                Pay:
+              </Label>
+              <div className="relative flex items-center gap-2">
+                <CurrencyInput
+                  id="pay-input-bottom"
+                  value={pendingPay ?? currentPay}
+                  onBlur={handlePayChange}
+                  onChange={setPendingPay}
+                />
+                {(payStatus === "saving" || payStatus === "loading") && (
+                  <Loader className="h-4 w-4 animate-spin text-muted-background" />
+                )}
+                {payStatus === "saved" && (
+                  <Check className="h-4 w-4 text-green-500" />
+                )}
+                {payStatus === "error" && (
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                )}
+              </div>
+            </div>
+
+            <div className="text-lg font-semibold">
+              Remaining Budget: ${remainingBudget.toFixed(2)}
             </div>
           </div>
-
-          <div className="text-lg font-semibold">
-            Remaining Budget: ${remainingBudget.toFixed(2)}
-          </div>
-        </div>
+        )}
       </motion.div>
 
       <AlertDialog open={showPayDialog} onOpenChange={setShowPayDialog}>
