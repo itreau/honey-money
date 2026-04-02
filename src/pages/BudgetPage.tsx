@@ -445,7 +445,7 @@ export default function BudgetPage() {
           </CardContent>
         </Card>
 
-        <ExpensesPieChart expenses={expenses} />
+        {selectedSheet && <ExpensesPieChart expenses={expenses} />}
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
