@@ -275,7 +275,7 @@ export default function BudgetPage() {
         throw new Error("Invalid response");
       }
 
-      setSheets((prev) => [...prev, data.month]);
+      setSheets((prev) => [...prev, data.month].filter(Boolean));
       setSelectedSheet(data.month);
       setNewSheetName("");
       setCopyFromSheetId(null);
@@ -402,7 +402,7 @@ export default function BudgetPage() {
                       <SelectValue placeholder="Select sheet" />
                     </SelectTrigger>
                     <SelectContent>
-                      {sheets.map((sheet) => (
+                      {sheets.filter(Boolean).map((sheet) => (
                         <SelectItem key={sheet.id} value={sheet.id.toString()}>
                           {sheet.name}
                         </SelectItem>
@@ -574,7 +574,7 @@ export default function BudgetPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None (start empty)</SelectItem>
-                  {sheets.map((sheet) => (
+                  {sheets.filter(Boolean).map((sheet) => (
                     <SelectItem key={sheet.id} value={sheet.id.toString()}>
                       {sheet.name}
                     </SelectItem>
