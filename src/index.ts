@@ -45,6 +45,8 @@ const server = serve({
           const name = body?.name || "Main";
           const copyFromMonthId = body?.copyFromMonthId ? parseInt(body.copyFromMonthId) : null;
 
+          console.log("Creating sheet:", { year, month, name, copyFromMonthId });
+
           let sheet;
           if (copyFromMonthId) {
             sheet = await repo.createSheetFromPrevious(year, month, name, copyFromMonthId);
@@ -52,11 +54,13 @@ const server = serve({
             sheet = await repo.createSheet(year, month, name);
           }
 
+          console.log("Sheet created:", sheet);
+
           const expenses = await repo.getExpensesByMonthId(sheet.id);
           return Response.json({ month: sheet, expenses });
         } catch (error) {
           console.error("Error creating sheet:", error);
-          return Response.json({ error: "Failed to create sheet" }, { status: 500 });
+          return Response.json({ error: "Failed to create sheet", details: String(error) }, { status: 500 });
         }
       },
     },
