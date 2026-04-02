@@ -30,12 +30,38 @@ const server = serve({
       },
     },
 
-    "/api/months/:year/:month": {
+    "/api/sheets/:year/:month": {
       async GET(req) {
         const year = parseInt(req.params.year);
         const month = parseInt(req.params.month);
-        const monthEntry = await repo.getOrCreateMonth(year, month);
-        return Response.json(monthEntry);
+        const sheets = await repo.getSheetsByYearMonth(year, month);
+        return Response.json(sheets);
+      },
+      async POST(req) {
+        const year = parseInt(req.params.year);
+        const month = parseInt(req.params.month);
+        const body = await req.json();
+        const name = body.name || "Main";
+        const copyFromMonthId = body.copyFromMonthId;
+
+        let sheet;
+        if (copyFromMonthId) {
+          sheet = await repo.createSheetFromPrevious(year, month, name, copyFromMonthId);
+        } else {
+          sheet = await repo.createSheet(year, month, name);
+        }
+
+        const expenses = await repo.getExpensesByMonthId(sheet.id);
+        return Response.json({ month: sheet, expenses });
+      },
+    },
+
+    "/api/sheets/:id": {
+      async DELETE(req) {
+        const id = parseInt(req.params.id);
+        const count = await repo.countSheetsByYearMonth(0, 0);
+        await repo.deleteSheet(id);
+        return Response.json({ success: true });
       },
     },
 
@@ -43,29 +69,22 @@ const server = serve({
       async GET(req) {
         const year = parseInt(req.params.year);
         const month = parseInt(req.params.month);
-        const exists = await repo.monthExists(year, month);
-        
-        if (!exists) {
-          return Response.json({ expenses: [], monthExists: false });
-        }
-        
-        const monthEntry = await repo.getMonthByYearMonth(year, month);
-        if (!monthEntry) {
-          return Response.json({ expenses: [], monthExists: false });
-        }
-        
-        const expenses = await repo.getExpensesByMonthId(monthEntry.id);
-        return Response.json({ expenses, monthExists: true });
-      },
-    },
+        const url = new URL(req.url);
+        const sheetId = url.searchParams.get("sheetId");
 
-    "/api/months/:year/:month/create-from-previous": {
-      async POST(req) {
-        const year = parseInt(req.params.year);
-        const month = parseInt(req.params.month);
-        const monthEntry = await repo.createMonthFromPrevious(year, month);
+        let monthEntry;
+        if (sheetId) {
+          monthEntry = await repo.getMonthById(parseInt(sheetId));
+        } else {
+          monthEntry = await repo.getMonthByYearMonth(year, month);
+        }
+
+        if (!monthEntry) {
+          return Response.json({ expenses: [], monthExists: false, sheet: null });
+        }
+
         const expenses = await repo.getExpensesByMonthId(monthEntry.id);
-        return Response.json({ month: monthEntry, expenses });
+        return Response.json({ expenses, monthExists: true, sheet: monthEntry });
       },
     },
 
@@ -87,7 +106,19 @@ const server = serve({
       async POST(req) {
         const year = parseInt(req.params.year);
         const month = parseInt(req.params.month);
-        const monthEntry = await repo.getOrCreateMonth(year, month);
+        const url = new URL(req.url);
+        const sheetId = url.searchParams.get("sheetId");
+
+        let monthEntry;
+        if (sheetId) {
+          monthEntry = await repo.getMonthById(parseInt(sheetId));
+        } else {
+          monthEntry = await repo.getOrCreateMonth(year, month);
+        }
+
+        if (!monthEntry) {
+          return Response.json({ error: "Sheet not found" }, { status: 404 });
+        }
 
         const prevExpenses = await repo.getPreviousMonthExpenses(year, month);
 
