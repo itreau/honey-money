@@ -112,7 +112,7 @@ const BudgetTableComponent = ({
               onDelete={deleteExpense}
               onCopy={handleCopy}
               onPaste={handlePaste}
-              onClearCopied={() => setCopiedExpense(null)}
+              onClearCopied={handleClearCopied}
               hasCopiedExpense={copiedExpense !== null}
             />
           ))}
