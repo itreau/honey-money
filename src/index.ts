@@ -119,17 +119,6 @@ const server = serve({
           return Response.json({ error: "Sheet not found" }, { status: 404 });
         }
 
-        const prevExpenses = await repo.getPreviousMonthExpenses(year, month);
-
-        if (prevExpenses.length > 0) {
-          const lastExpense = prevExpenses[prevExpenses.length - 1];
-          const expense = await repo.addExpense(monthEntry.id, {
-            category: lastExpense.category,
-            budget: lastExpense.budget,
-          });
-          return Response.json(expense);
-        }
-
         const expense = await repo.addExpense(monthEntry.id);
         return Response.json(expense);
       },

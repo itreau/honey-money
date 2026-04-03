@@ -15,6 +15,7 @@ interface BudgetTableProps {
   loading: boolean;
   year: number | null;
   month: number | null;
+  sheetId: number | null;
   onExpensesChange: (expenses: Expense[]) => void;
 }
 
@@ -23,6 +24,7 @@ const BudgetTableComponent = ({
   loading,
   year,
   month,
+  sheetId,
   onExpensesChange,
 }: BudgetTableProps) => {
   const [copiedExpense, setCopiedExpense] = useState<Expense | null>(null);
@@ -49,7 +51,12 @@ const BudgetTableComponent = ({
   }, [expenses, onExpensesChange]);
 
   const addExpense = useCallback(async () => {
-    const res = await fetch(`/api/expenses/add/${year}/${month}`, {
+    const url = new URL(`/api/expenses/add/${year}/${month}`, window.location.origin);
+    if (sheetId) {
+      url.searchParams.set("sheetId", sheetId.toString());
+    }
+
+    const res = await fetch(url.toString(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
@@ -57,7 +64,7 @@ const BudgetTableComponent = ({
     const data = await res.json();
 
     onExpensesChange([...expenses, data]);
-  }, [year, month, expenses, onExpensesChange]);
+  }, [year, month, sheetId, expenses, onExpensesChange]);
 
   const handleCopy = useCallback((expense: Expense) => {
     setCopiedExpense(expense);

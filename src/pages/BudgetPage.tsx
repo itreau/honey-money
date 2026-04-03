@@ -441,6 +441,7 @@ async function handleCreateNewSheet() {
                 loading={expensesLoading}
                 year={selectedYear}
                 month={selectedMonth}
+                sheetId={selectedSheet?.id ?? null}
                 onExpensesChange={handleExpensesChange}
               />
             )}
