@@ -13,8 +13,8 @@ import type { Expense } from "@/models/Expense";
 interface BudgetTableProps {
   expenses: Expense[];
   loading: boolean;
-  year: number | null;
-  month: number | null;
+  year: number;
+  month: number;
   sheetId: number | null;
   onExpensesChange: (expenses: Expense[]) => void;
 }

@@ -46,8 +46,13 @@ function formatMonth(month: number): string {
 }
 
 export default function BudgetPage() {
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const currentDate = useMemo(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  }, []);
+  
+  const [selectedYear, setSelectedYear] = useState<number>(currentDate.year);
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.month);
   const [selectedSheet, setSelectedSheet] = useState<Month | null>(null);
   const [sheets, setSheets] = useState<Month[]>([]);
   const [monthExists, setMonthExists] = useState<boolean | null>(null);
@@ -80,9 +85,7 @@ export default function BudgetPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedYear !== null && selectedMonth !== null) {
-      fetchSheets();
-    }
+    fetchSheets();
   }, [selectedYear, selectedMonth]);
 
   useEffect(() => {
@@ -92,7 +95,6 @@ export default function BudgetPage() {
   }, [selectedSheet]);
 
   const handleYearChange = useCallback((direction: "prev" | "next") => {
-    if (selectedYear === null) return;
     const newYear = direction === "next" ? selectedYear + 1 : selectedYear - 1;
     const currentMonth = new Date().getMonth() + 1;
     setSelectedYear(newYear);
@@ -120,7 +122,6 @@ export default function BudgetPage() {
   }, []);
 
   async function fetchSheets() {
-    if (selectedYear === null || selectedMonth === null) return;
     try {
       const res = await fetch(`/api/sheets/${selectedYear}/${selectedMonth}`);
       const data = await res.json();
@@ -214,8 +215,6 @@ export default function BudgetPage() {
   }
 
   async function confirmCreateFromPrevious() {
-    if (selectedYear === null || selectedMonth === null) return;
-
     try {
       setIsCreating(true);
       const res = await fetch(
@@ -238,8 +237,8 @@ export default function BudgetPage() {
     }
   }
 
-async function handleCreateNewSheet() {
-    if (selectedYear === null || selectedMonth === null || !newSheetName.trim()) return;
+  async function handleCreateNewSheet() {
+    if (!newSheetName.trim()) return;
 
     try {
       setIsCreating(true);
@@ -274,7 +273,7 @@ async function handleCreateNewSheet() {
       setSheets((prev) => prev.filter((s) => s.id !== selectedSheet.id));
       const remainingSheets = sheets.filter((s) => s.id !== selectedSheet.id);
       if (remainingSheets.length > 0) {
-        setSelectedSheet(remainingSheets[0]);
+        setSelectedSheet(remainingSheets[0]|| null);
       } else {
         setSelectedSheet(null);
         setMonthExists(false);
@@ -286,9 +285,8 @@ async function handleCreateNewSheet() {
   }
 
   const displayedYears = useMemo(() => {
-    if (selectedYear === null) return [];
     const currentYear = new Date().getFullYear();
-    const years = new Set([selectedYear - 1, selectedYear, selectedYear + 1, currentYear]);
+    const years = new Set([selectedYear - 1, selectedYear, selectedYear +1, currentYear]);
     return Array.from(years).sort((a, b) => a - b);
   }, [selectedYear]);
 
@@ -303,7 +301,7 @@ async function handleCreateNewSheet() {
       >
         <div className="flex flex-col gap-4">
           <Tabs
-            value={selectedYear?.toString() || ""}
+            value={selectedYear.toString()}
             onValueChange={handleYearSelect}
             className="w-full"
           >
@@ -312,7 +310,6 @@ async function handleCreateNewSheet() {
                 variant="outline"
                 size="icon"
                 onClick={() => handleYearChange("prev")}
-                disabled={selectedYear === null}
                 aria-label="Previous year"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -334,7 +331,6 @@ async function handleCreateNewSheet() {
                 variant="outline"
                 size="icon"
                 onClick={() => handleYearChange("next")}
-                disabled={selectedYear === null}
                 aria-label="Next year"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -348,7 +344,6 @@ async function handleCreateNewSheet() {
               <Select
                 value={selectedMonth?.toString() || ""}
                 onValueChange={handleMonthChange}
-                disabled={selectedYear === null}
               >
                 <SelectTrigger id="month-select">
                   <SelectValue placeholder="Select month">
@@ -418,11 +413,9 @@ async function handleCreateNewSheet() {
           <CardHeader className="text-center">
             <CardTitle>
               {selectedSheet?.name || "Monthly Budget"}
-              {selectedYear !== null && selectedMonth !== null && (
-                <span className="ml-2 text-muted-foreground font-normal">
-                  - {formatMonth(selectedMonth)} {selectedYear}
-                </span>
-              )}
+              <span className="ml-2 text-muted-foreground font-normal">
+                - {formatMonth(selectedMonth)} {selectedYear}
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
