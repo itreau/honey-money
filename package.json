@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "bun --hot src/index.ts",
+    "dev:vite": "vite",
     "start": "NODE_ENV=production bun src/index.ts",
-    "build": "bun run build.ts"
+    "build": "bun run build.ts",
+    "build:vite": "vite build",
+    "vercel-build": "vite build"
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",
@@ -35,8 +38,12 @@
     "ui": "shadcn/ui"
   },
   "devDependencies": {
+    "@types/bun": "latest",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/bun": "latest"
+    "@vercel/node": "^5.7.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.3"
   }
 }
