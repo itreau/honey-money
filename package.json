@@ -40,6 +40,7 @@
     "ui": "shadcn/ui"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
     "@types/bun": "latest",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
