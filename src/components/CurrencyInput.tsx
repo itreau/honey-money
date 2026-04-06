@@ -1,7 +1,7 @@
-import { Input, InputProps } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { forwardRef } from "react";
 
-type CurrencyInputProps = Omit<InputProps, "onChange" | "value"> & {
+type CurrencyInputProps = Omit<React.ComponentProps<"input">, "onChange" | "value"> & {
   value: number | string;
   onChange: (value: number) => void;
 };
