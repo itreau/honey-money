@@ -1,21 +1,27 @@
-import { db } from "./client";
+import { supabase } from "./client";
 import type { Pay } from "@/models/Pay";
 
 export async function getLatestPay(): Promise<Pay | null> {
-  const result = await db.execute({
-    sql: "SELECT * FROM pay ORDER BY created_at DESC LIMIT 1",
-  });
-  return (result.rows[0] as unknown as Pay) || null;
+  const { data, error } = await supabase
+    .from('pay')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  
+  if (error) throw error;
+  return data as Pay | null;
 }
 
 export async function createPay(amount: number): Promise<Pay> {
-  await db.execute({
-    sql: "INSERT INTO pay (amount) VALUES (?)",
-    args: [amount],
-  });
+  const { data, error } = await supabase
+    .from('pay')
+    .insert({ amount })
+    .select()
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
   
-  const result = await db.execute({
-    sql: "SELECT * FROM pay ORDER BY created_at DESC LIMIT 1",
-  });
-  return result.rows[0] as unknown as Pay;
+  if (error) throw error;
+  return data as Pay;
 }
