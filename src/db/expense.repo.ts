@@ -1,67 +1,66 @@
-import { db } from "./client";
+import { supabase } from "./client";
 import type { Expense } from "@/models/Expense";
 import { getMonthByYearMonth } from "./month.repo";
 
 export async function getExpensesByMonthId(
   monthId: number,
 ): Promise<Expense[]> {
-  const result = await db.execute({
-    sql: "SELECT * FROM expenses WHERE month_id = ?",
-    args: [monthId],
-  });
-  return result.rows as unknown as Expense[];
+  const { data, error } = await supabase
+    .from('expenses')
+    .select('*')
+    .eq('month_id', monthId);
+  
+  if (error) throw error;
+  return data as Expense[];
 }
 
 export async function updateExpense(
   id: number,
   updates: { budget?: number; amount?: number; category?: string },
 ): Promise<void> {
-  const fields: string[] = [];
-  const values: (number | string)[] = [];
+  const updateData: any = {};
+  
+  if (updates.budget !== undefined) updateData.budget = updates.budget;
+  if (updates.amount !== undefined) updateData.amount = updates.amount;
+  if (updates.category !== undefined) updateData.category = updates.category;
 
-  if (updates.budget !== undefined) {
-    fields.push("budget = ?");
-    values.push(updates.budget);
-  }
-  if (updates.amount !== undefined) {
-    fields.push("amount = ?");
-    values.push(updates.amount);
-  }
-  if (updates.category !== undefined) {
-    fields.push("category = ?");
-    values.push(updates.category);
-  }
+  if (Object.keys(updateData).length === 0) return;
 
-  if (fields.length === 0) return;
-
-  await db.execute({
-    sql: `UPDATE expenses SET ${fields.join(", ")} WHERE id = ?`,
-    args: [...values, id],
-  });
+  const { error } = await supabase
+    .from('expenses')
+    .update(updateData)
+    .eq('id', id);
+  
+  if (error) throw error;
 }
 
 export async function deleteExpense(id: number): Promise<void> {
-  await db.execute({
-    sql: "DELETE FROM expenses WHERE id = ?",
-    args: [id],
-  });
+  const { error } = await supabase
+    .from('expenses')
+    .delete()
+    .eq('id', id);
+  
+  if (error) throw error;
 }
 
 export async function addExpense(monthId: number, data?: { category?: string; budget?: number }): Promise<Expense> {
   const category = data?.category ?? "";
   const budget = data?.budget ?? 0;
 
-  await db.execute({
-    sql: "INSERT INTO expenses (month_id, category, budget, amount, note) VALUES (?, ?, ?, 0, NULL)",
-    args: [monthId, category, budget],
-  });
+  const { data: result, error } = await supabase
+    .from('expenses')
+    .insert({
+      month_id: monthId,
+      category,
+      budget,
+      amount: 0,
+      note: null
+    })
+    .select()
+    .single();
 
-  const result = await db.execute({
-    sql: "SELECT * FROM expenses WHERE rowid = last_insert_rowid()",
-    args: [],
-  });
-
-  return result.rows[0] as unknown as Expense;
+  if (error) throw error;
+  return result as Expense;
 }
 
 export async function getPreviousMonthExpenses(year: number, month: number): Promise<Expense[]> {

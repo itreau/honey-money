@@ -1,74 +1,108 @@
-import { db } from "./client";
+import { supabase } from "./client";
 import type { Month } from "@/models/Month";
 import { getTemplates } from "./template.repo";
 
 export async function getAllMonths(): Promise<Month[]> {
-  const result = await db.execute({
-    sql: "SELECT * FROM months ORDER BY year DESC, month DESC, name ASC",
-  });
-  return result.rows as unknown as Month[];
+  const { data, error } = await supabase
+    .from('months')
+    .select('*')
+    .order('year', { ascending: false })
+    .order('month', { ascending: false })
+    .order('name', { ascending: true });
+  
+  if (error) throw error;
+  return data as Month[];
 }
 
 export async function getSheetsByYearMonth(year: number, month: number): Promise<Month[]> {
-  const result = await db.execute({
-    sql: "SELECT * FROM months WHERE year = ? AND month = ? ORDER BY name ASC",
-    args: [year, month],
-  });
-  return result.rows as unknown as Month[];
+  const { data, error } = await supabase
+    .from('months')
+    .select('*')
+    .eq('year', year)
+    .eq('month', month)
+    .order('name', { ascending: true });
+  
+  if (error) throw error;
+  return data as Month[];
 }
 
 export async function getMonthByYearMonth(year: number, month: number): Promise<Month | null> {
-  const result = await db.execute({
-    sql: "SELECT * FROM months WHERE year = ? AND month = ? ORDER BY name ASC LIMIT 1",
-    args: [year, month],
-  });
-  return (result.rows[0] as unknown as Month) || null;
+  const { data, error } = await supabase
+    .from('months')
+    .select('*')
+    .eq('year', year)
+    .eq('month', month)
+    .order('name', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  
+  if (error) throw error;
+  return data as Month | null;
 }
 
 export async function getMonthById(id: number): Promise<Month | null> {
-  const result = await db.execute({
-    sql: "SELECT * FROM months WHERE id = ?",
-    args: [id],
-  });
-  return (result.rows[0] as unknown as Month) || null;
+  const { data, error } = await supabase
+    .from('months')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  
+  if (error) throw error;
+  return data as Month | null;
 }
 
 export async function createSheet(year: number, month: number, name: string): Promise<Month> {
-  await db.execute({
-    sql: "INSERT INTO months (year, month, name) VALUES (?, ?, ?)",
-    args: [year, month, name],
-  });
+  const { data, error } = await supabase
+    .from('months')
+    .insert({ year, month, name })
+    .select()
+    .single();
 
-  const newMonth = await getMonthByYearMonthAndName(year, month, name);
-  if (!newMonth) throw new Error("Failed to create sheet");
-
+  if (error) throw error;
+  
+  const newMonth = data as Month;
   await applyTemplatesToMonth(newMonth.id);
 
   return newMonth;
 }
 
 export async function getMonthByYearMonthAndName(year: number, month: number, name: string): Promise<Month | null> {
-  const result = await db.execute({
-    sql: "SELECT * FROM months WHERE year = ? AND month = ? AND name = ? LIMIT 1",
-    args: [year, month, name],
-  });
-  return (result.rows[0] as unknown as Month) || null;
+  const { data, error } = await supabase
+    .from('months')
+    .select('*')
+    .eq('year', year)
+    .eq('month', month)
+    .eq('name', name)
+    .limit(1)
+    .maybeSingle();
+  
+  if (error) throw error;
+  return data as Month | null;
 }
 
 export async function createSheetFromPrevious(year: number, month: number, name: string, copyFromMonthId?: number): Promise<Month> {
   const newMonth = await createSheet(year, month, name);
 
   if (copyFromMonthId) {
-    const expenses = await db.execute({
-      sql: "SELECT * FROM expenses WHERE month_id = ?",
-      args: [copyFromMonthId],
-    });
+    const { data: expenses, error } = await supabase
+      .from('expenses')
+      .select('*')
+      .eq('month_id', copyFromMonthId);
+    
+    if (error) throw error;
 
-    for (const expense of expenses.rows as any[]) {
-      await db.execute({
-        sql: "INSERT INTO expenses (month_id, category, budget, amount, note) VALUES (?, ?, ?, ?, ?)",
-        args: [newMonth.id, expense.category, expense.budget ?? 0, expense.amount ?? 0, expense.note ?? null],
-      });
+    for (const expense of expenses || []) {
+      const { error: insertError } = await supabase
+        .from('expenses')
+        .insert({
+          month_id: newMonth.id,
+          category: expense.category,
+          budget: expense.budget ?? 0,
+          amount: expense.amount ?? 0,
+          note: expense.note ?? null
+        });
+      
+      if (insertError) throw insertError;
     }
   }
 
@@ -76,25 +110,35 @@ export async function createSheetFromPrevious(year: number, month: number, name:
 }
 
 export async function deleteSheet(id: number): Promise<void> {
-  await db.execute({
-    sql: "DELETE FROM expenses WHERE month_id = ?",
-    args: [id],
-  });
+  const { error: expenseError } = await supabase
+    .from('expenses')
+    .delete()
+    .eq('month_id', id);
+  
+  if (expenseError) throw expenseError;
 
-  await db.execute({
-    sql: "DELETE FROM months WHERE id = ?",
-    args: [id],
-  });
+  const { error: monthError } = await supabase
+    .from('months')
+    .delete()
+    .eq('id', id);
+  
+  if (monthError) throw monthError;
 }
 
 export async function applyTemplatesToMonth(monthId: number): Promise<void> {
   const templates = await getTemplates();
 
   for (const template of templates) {
-    await db.execute({
-      sql: "INSERT INTO expenses (month_id, category, amount, note) VALUES (?, ?, ?, ?)",
-      args: [monthId, template.category, template.default_amount, template.note],
-    });
+    const { error } = await supabase
+      .from('expenses')
+      .insert({
+        month_id: monthId,
+        category: template.category,
+        amount: template.default_amount,
+        note: template.note
+      });
+    
+    if (error) throw error;
   }
 }
 
@@ -109,24 +153,35 @@ export async function getOrCreateMonth(year: number, month: number): Promise<Mon
 }
 
 export async function getAvailableYears(): Promise<number[]> {
-  const result = await db.execute({
-    sql: "SELECT DISTINCT year FROM months ORDER BY year DESC",
-  });
-  return result.rows.map((row) => row.year as number);
+  const { data, error } = await supabase
+    .from('months')
+    .select('year')
+    .order('year', { ascending: false });
+  
+  if (error) throw error;
+  const years = [...new Set(data?.map(row => row.year))];
+  return years as number[];
 }
 
 export async function monthExists(year: number, month: number): Promise<boolean> {
-  const result = await db.execute({
-    sql: "SELECT id FROM months WHERE year = ? AND month = ?",
-    args: [year, month],
-  });
-  return result.rows.length > 0;
+  const { data, error } = await supabase
+    .from('months')
+    .select('id')
+    .eq('year', year)
+    .eq('month', month)
+    .limit(1);
+  
+  if (error) throw error;
+  return (data?.length || 0) > 0;
 }
 
 export async function countSheetsByYearMonth(year: number, month: number): Promise<number> {
-  const result = await db.execute({
-    sql: "SELECT COUNT(*) as count FROM months WHERE year = ? AND month = ?",
-    args: [year, month],
-  });
-  return (result.rows[0] as any).count;
+  const { count, error } = await supabase
+    .from('months')
+    .select('*', { count: 'exact', head: true })
+    .eq('year', year)
+    .eq('month', month);
+  
+  if (error) throw error;
+  return count || 0;
 }
