@@ -12,8 +12,16 @@ export async function authFetch(
     headers.set('Authorization', `Bearer ${session.access_token}`);
   }
   
-  return fetch(input, {
+  const response = await fetch(input, {
     ...init,
     headers,
   });
+
+  // If 401 Unauthorized, sign out and redirect to login
+  if (response.status === 401) {
+    await supabase.auth.signOut();
+    window.location.reload();
+  }
+
+  return response;
 }
