@@ -40,7 +40,8 @@ export default withAuth(async (req: VercelRequest, res: VercelResponse) => {
       const expenses = await getExpensesByMonthId(sheet.id);
       res.status(201).json({ month: sheet, expenses });
     } catch (error) {
-      res.status(500).json({ error: 'Failed to create sheet' });
+      console.error('Error creating sheet:', error);
+      res.status(500).json({ error: 'Failed to create sheet', details: error instanceof Error ? error.message : 'Unknown error' });
     }
   } else {
     res.status(405).json({ error: 'Method not allowed' });
