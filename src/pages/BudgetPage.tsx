@@ -72,6 +72,7 @@ export default function BudgetPage() {
   const [newSheetName, setNewSheetName] = useState("");
   const [copyFromSheetId, setCopyFromSheetId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isLoadingNewSheetDialog, setIsLoadingNewSheetDialog] = useState(false);
   const [payStatus, setPayStatus] = useState<Status>("idle");
   const [sheetsLoading, setSheetsLoading] = useState(false);
   const [allSheets, setAllSheets] = useState<Month[]>([]);
@@ -271,14 +272,19 @@ async function confirmPayChange() {
   }
 
   async function handleOpenNewSheetDialog() {
-    const res = await authFetch("/api/months");
-    const data = await res.json();
-    setAllSheets(data);
-    setCopyYear(null);
-    setCopyMonth(null);
-    setCopyFromSheetId(null);
-    setNewSheetName("");
-    setShowNewSheetDialog(true);
+    setIsLoadingNewSheetDialog(true);
+    try {
+      const res = await authFetch("/api/months");
+      const data = await res.json();
+      setAllSheets(data);
+      setCopyYear(null);
+      setCopyMonth(null);
+      setCopyFromSheetId(null);
+      setNewSheetName("");
+      setShowNewSheetDialog(true);
+    } finally {
+      setIsLoadingNewSheetDialog(false);
+    }
   }
 
   async function handleCreateNewSheet() {
@@ -463,10 +469,15 @@ async function confirmPayChange() {
                   variant="outline"
                   size="icon"
                   onClick={handleOpenNewSheetDialog}
+                  disabled={isLoadingNewSheetDialog}
                   className="mb-0.5"
                   title="Add new sheet"
                 >
-                  <Plus className="h-4 w-4" />
+                  {isLoadingNewSheetDialog ? (
+                    <Loader className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
                 </Button>
 
                 <Button
