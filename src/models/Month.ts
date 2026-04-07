@@ -1,5 +1,5 @@
 export interface Month {
-  id: number;
+  id: string;
   month: number;
   year: number;
   name: string;

@@ -40,7 +40,7 @@ export async function getMonthByYearMonth(year: number, month: number): Promise<
   return data as Month | null;
 }
 
-export async function getMonthById(id: number): Promise<Month | null> {
+export async function getMonthById(id: string): Promise<Month | null> {
   const { data, error } = await supabase
     .from('months')
     .select('*')
@@ -54,7 +54,12 @@ export async function getMonthById(id: number): Promise<Month | null> {
 export async function createSheet(year: number, month: number, name: string): Promise<Month> {
   const { data, error } = await supabase
     .from('months')
-    .insert({ year, month, name })
+    .insert({ 
+      id: crypto.randomUUID(),
+      year, 
+      month, 
+      name 
+    })
     .select()
     .single();
 
@@ -80,7 +85,7 @@ export async function getMonthByYearMonthAndName(year: number, month: number, na
   return data as Month | null;
 }
 
-export async function createSheetFromPrevious(year: number, month: number, name: string, copyFromMonthId?: number): Promise<Month> {
+export async function createSheetFromPrevious(year: number, month: number, name: string, copyFromMonthId?: string): Promise<Month> {
   const newMonth = await createSheet(year, month, name);
 
   if (copyFromMonthId) {
@@ -95,6 +100,7 @@ export async function createSheetFromPrevious(year: number, month: number, name:
       const { error: insertError } = await supabase
         .from('expenses')
         .insert({
+          id: crypto.randomUUID(),
           month_id: newMonth.id,
           ...expense
         });
@@ -106,7 +112,7 @@ export async function createSheetFromPrevious(year: number, month: number, name:
   return newMonth;
 }
 
-export async function deleteSheet(id: number): Promise<void> {
+export async function deleteSheet(id: string): Promise<void> {
   const { error: expenseError } = await supabase
     .from('expenses')
     .delete()
@@ -122,13 +128,14 @@ export async function deleteSheet(id: number): Promise<void> {
   if (monthError) throw monthError;
 }
 
-export async function applyTemplatesToMonth(monthId: number): Promise<void> {
+export async function applyTemplatesToMonth(monthId: string): Promise<void> {
   const templates = await getTemplates();
 
   for (const template of templates) {
     const { error } = await supabase
       .from('expenses')
       .insert({
+        id: crypto.randomUUID(),
         month_id: monthId,
         category: template.category,
         amount: template.default_amount,

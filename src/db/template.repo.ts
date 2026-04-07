@@ -14,6 +14,7 @@ export async function createTemplate(category: string, defaultAmount: number, no
   const { data, error } = await supabase
     .from('expense_templates')
     .insert({
+      id: crypto.randomUUID(),
       category,
       default_amount: defaultAmount,
       note: note || null

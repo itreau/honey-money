@@ -28,7 +28,7 @@ export default withAuth(async (req: VercelRequest, res: VercelResponse) => {
     try {
       const body = req.body;
       const name = body?.name || 'Main';
-      const copyFromMonthId = body?.copyFromMonthId ? parseInt(body.copyFromMonthId, 10) : null;
+      const copyFromMonthId = body?.copyFromMonthId || null;
 
       let sheet;
       if (copyFromMonthId) {

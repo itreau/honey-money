@@ -10,11 +10,7 @@ export default withAuth(async (req: VercelRequest, res: VercelResponse) => {
     return res.status(400).json({ error: 'Invalid ID' });
   }
   
-  const sheetId = parseInt(id, 10);
-  
-  if (isNaN(sheetId)) {
-    return res.status(400).json({ error: 'Invalid ID' });
-  }
+  const sheetId = id;
 
   if (req.method === 'DELETE') {
     try {

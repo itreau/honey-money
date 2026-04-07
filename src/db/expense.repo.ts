@@ -3,7 +3,7 @@ import type { Expense } from "@/models/Expense";
 import { getMonthByYearMonth } from "./month.repo";
 
 export async function getExpensesByMonthId(
-  monthId: number,
+  monthId: string,
 ): Promise<Expense[]> {
   const { data, error } = await supabase
     .from('expenses')
@@ -15,7 +15,7 @@ export async function getExpensesByMonthId(
 }
 
 export async function updateExpense(
-  id: number,
+  id: string,
   updates: { budget?: number; amount?: number; category?: string },
 ): Promise<void> {
   const updateData: any = {};
@@ -34,7 +34,7 @@ export async function updateExpense(
   if (error) throw error;
 }
 
-export async function deleteExpense(id: number): Promise<void> {
+export async function deleteExpense(id: string): Promise<void> {
   const { error } = await supabase
     .from('expenses')
     .delete()
@@ -43,13 +43,14 @@ export async function deleteExpense(id: number): Promise<void> {
   if (error) throw error;
 }
 
-export async function addExpense(monthId: number, data?: { category?: string; budget?: number }): Promise<Expense> {
+export async function addExpense(monthId: string, data?: { category?: string; budget?: number }): Promise<Expense> {
   const category = data?.category ?? "";
   const budget = data?.budget ?? 0;
 
   const { data: result, error } = await supabase
     .from('expenses')
     .insert({
+      id: crypto.randomUUID(),
       month_id: monthId,
       category,
       budget,

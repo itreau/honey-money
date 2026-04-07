@@ -3,21 +3,21 @@ export interface Database {
     Tables: {
       months: {
         Row: {
-          id: number
+          id: string
           year: number
           month: number
           name: string
           created_at: string
         }
         Insert: {
-          id?: number
+          id?: string
           year: number
           month: number
           name: string
           created_at?: string
         }
         Update: {
-          id?: number
+          id?: string
           year?: number
           month?: number
           name?: string
@@ -26,8 +26,8 @@ export interface Database {
       }
       expenses: {
         Row: {
-          id: number
-          month_id: number
+          id: string
+          month_id: string
           category: string
           budget: number
           amount: number
@@ -35,8 +35,8 @@ export interface Database {
           created_at: string
         }
         Insert: {
-          id?: number
-          month_id: number
+          id?: string
+          month_id: string
           category: string
           budget?: number
           amount?: number
@@ -44,8 +44,8 @@ export interface Database {
           created_at?: string
         }
         Update: {
-          id?: number
-          month_id?: number
+          id?: string
+          month_id?: string
           category?: string
           budget?: number
           amount?: number
@@ -55,36 +55,36 @@ export interface Database {
       }
       pay: {
         Row: {
-          id: number
+          id: string
           amount: number
           created_at: string
         }
         Insert: {
-          id?: number
+          id?: string
           amount: number
           created_at?: string
         }
         Update: {
-          id?: number
+          id?: string
           amount?: number
           created_at?: string
         }
       }
       expense_templates: {
         Row: {
-          id: number
+          id: string
           category: string
           default_amount: number
           note: string | null
         }
         Insert: {
-          id?: number
+          id?: string
           category: string
           default_amount?: number
           note?: string | null
         }
         Update: {
-          id?: number
+          id?: string
           category?: string
           default_amount?: number
           note?: string | null

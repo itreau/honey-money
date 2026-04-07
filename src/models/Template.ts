@@ -1,5 +1,5 @@
 export interface Template {
-  id: number;
+  id: string;
   category: string;
   default_amount: number;
   note: string | null;

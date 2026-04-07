@@ -16,7 +16,10 @@ export async function getLatestPay(): Promise<Pay | null> {
 export async function createPay(amount: number): Promise<Pay> {
   const { data, error } = await supabase
     .from('pay')
-    .insert({ amount })
+    .insert({ 
+      id: crypto.randomUUID(),
+      amount 
+    })
     .select()
     .order('created_at', { ascending: false })
     .limit(1)

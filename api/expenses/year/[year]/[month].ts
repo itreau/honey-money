@@ -22,7 +22,7 @@ export default withAuth(async (req: VercelRequest, res: VercelResponse) => {
     try {
       let monthEntry;
       if (sheetId && typeof sheetId === 'string') {
-        monthEntry = await getMonthById(parseInt(sheetId, 10));
+        monthEntry = await getMonthById(sheetId);
       } else {
         monthEntry = await getMonthByYearMonth(yearNum, monthNum);
       }

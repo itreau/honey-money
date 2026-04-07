@@ -10,11 +10,7 @@ export default withAuth(async (req: VercelRequest, res: VercelResponse) => {
     return res.status(400).json({ error: 'Invalid ID' });
   }
   
-  const expenseId = parseInt(id, 10);
-  
-  if (isNaN(expenseId)) {
-    return res.status(400).json({ error: 'Invalid ID' });
-  }
+  const expenseId = id;
 
   if (req.method === 'PATCH') {
     try {
