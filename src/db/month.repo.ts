@@ -86,7 +86,7 @@ export async function createSheetFromPrevious(year: number, month: number, name:
   if (copyFromMonthId) {
     const { data: expenses, error } = await supabase
       .from('expenses')
-      .select('*')
+      .select('category, budget, amount, note')
       .eq('month_id', copyFromMonthId);
     
     if (error) throw error;
@@ -96,10 +96,7 @@ export async function createSheetFromPrevious(year: number, month: number, name:
         .from('expenses')
         .insert({
           month_id: newMonth.id,
-          category: expense.category,
-          budget: expense.budget ?? 0,
-          amount: expense.amount ?? 0,
-          note: expense.note ?? null
+          ...expense
         });
       
       if (insertError) throw insertError;
