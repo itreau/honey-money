@@ -70,7 +70,7 @@ export default function BudgetPage() {
   const [showNewSheetDialog, setShowNewSheetDialog] = useState(false);
   const [showDeleteSheetDialog, setShowDeleteSheetDialog] = useState(false);
   const [newSheetName, setNewSheetName] = useState("");
-  const [copyFromSheetId, setCopyFromSheetId] = useState<number | null>(null);
+  const [copyFromSheetId, setCopyFromSheetId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [payStatus, setPayStatus] = useState<Status>("idle");
   const [sheetsLoading, setSheetsLoading] = useState(false);
@@ -648,10 +648,10 @@ async function confirmPayChange() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select
-                  value={copyFromSheetId?.toString() || ""}
+<Select
+                  value={copyFromSheetId || ""}
                   onValueChange={(val) =>
-                    setCopyFromSheetId(val ? parseInt(val) : null)
+                    setCopyFromSheetId(val || null)
                   }
                   disabled={!copyMonth}
                 >
@@ -659,7 +659,7 @@ async function confirmPayChange() {
                     <SelectValue placeholder="Sheet" />
                   </SelectTrigger>
                   <SelectContent>
-{availableSheetsForCopy.map((sheet) => (
+                    {availableSheetsForCopy.map((sheet) => (
                         <SelectItem key={sheet.id} value={sheet.id}>
                           {sheet.name}
                         </SelectItem>
@@ -738,10 +738,10 @@ async function confirmPayChange() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select
-                  value={copyFromSheetId?.toString() || ""}
+<Select
+                  value={copyFromSheetId || ""}
                   onValueChange={(val) =>
-                    setCopyFromSheetId(val ? parseInt(val) : null)
+                    setCopyFromSheetId(val || null)
                   }
                   disabled={!copyMonth}
                 >
@@ -749,7 +749,7 @@ async function confirmPayChange() {
                     <SelectValue placeholder="Sheet" />
                   </SelectTrigger>
                   <SelectContent>
-{availableSheetsForCopy.map((sheet) => (
+                    {availableSheetsForCopy.map((sheet) => (
                         <SelectItem key={sheet.id} value={sheet.id}>
                           {sheet.name}
                         </SelectItem>
