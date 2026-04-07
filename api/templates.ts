@@ -1,15 +1,21 @@
+import './_init';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getTemplates } from '../../src/db';
+import { withAuth } from './_auth';
+import { getTemplates } from '../src/db';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default withAuth(async (req: VercelRequest, res: VercelResponse) => {
   if (req.method === 'GET') {
     try {
       const templates = await getTemplates();
       res.status(200).json(templates);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch templates' });
+    } catch (error: unknown) {
+      const err = error as { message?: string; error?: string; details?: string };
+      res.status(500).json({ 
+        error: 'Failed to fetch templates', 
+        details: err.message || err.error || err.details || JSON.stringify(error)
+      });
     }
   } else {
     res.status(405).json({ error: 'Method not allowed' });
   }
-}
+});

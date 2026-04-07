@@ -1,7 +1,9 @@
+import './_init';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { withAuth } from './_auth';
 import { getAvailableYears } from '../src/db';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default withAuth(async (req: VercelRequest, res: VercelResponse) => {
   if (req.method === 'GET') {
     try {
       const years = await getAvailableYears();
@@ -12,4 +14,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } else {
     res.status(405).json({ error: 'Method not allowed' });
   }
-}
+});

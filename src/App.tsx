@@ -1,11 +1,17 @@
 import "./styles/globals.css";
 import BudgetPage from "@/pages/BudgetPage";
+import { AuthProvider } from "@/auth/AuthContext";
+import { ProtectedRoute } from "@/auth/ProtectedRoute";
 
 export function App() {
   return (
-    <div className="p-4">
-      <BudgetPage />
-    </div>
+    <AuthProvider>
+      <ProtectedRoute>
+        <div className="p-4">
+          <BudgetPage />
+        </div>
+      </ProtectedRoute>
+    </AuthProvider>
   );
 }
 

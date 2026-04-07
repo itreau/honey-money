@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { Label } from "@/components/ui/label";
-import { Loader, Check, AlertCircle, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { Loader, Check, AlertCircle, ChevronLeft, ChevronRight, Plus, Trash2, LogOut } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -33,6 +34,8 @@ import {
 } from "@/components/ui/dialog";
 import BudgetTable from "@/components/BudgetTable";
 import { ExpensesPieChart } from "@/components/ExpensesPieChart";
+import { useAuth } from "@/auth/AuthContext";
+import { authFetch } from "@/lib/authFetch";
 import type { Expense } from "@/models/Expense";
 import type { Month } from "@/models/Month";
 
@@ -51,6 +54,8 @@ export default function BudgetPage() {
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
   }, []);
   
+  const { signOut } = useAuth();
+  
   const [selectedYear, setSelectedYear] = useState<number>(currentDate.year);
   const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.month);
   const [selectedSheet, setSelectedSheet] = useState<Month | null>(null);
@@ -68,6 +73,10 @@ export default function BudgetPage() {
   const [copyFromSheetId, setCopyFromSheetId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [payStatus, setPayStatus] = useState<Status>("idle");
+  const [sheetsLoading, setSheetsLoading] = useState(false);
+  const [allSheets, setAllSheets] = useState<Month[]>([]);
+  const [copyYear, setCopyYear] = useState<number | null>(null);
+  const [copyMonth, setCopyMonth] = useState<number | null>(null);
 
   const totalExpenses = useMemo(
     () => expenses.reduce((sum, e) => sum + e.amount, 0),
@@ -122,8 +131,9 @@ export default function BudgetPage() {
   }, []);
 
   async function fetchSheets() {
+    setSheetsLoading(true);
     try {
-      const res = await fetch(`/api/sheets/${selectedYear}/${selectedMonth}`);
+      const res = await authFetch(`/api/sheets/year/${selectedYear}/${selectedMonth}`);
       const data = await res.json();
       setSheets(data);
       if (data.length > 0) {
@@ -138,6 +148,8 @@ export default function BudgetPage() {
       setSheets([]);
       setSelectedSheet(null);
       setMonthExists(false);
+    } finally {
+      setSheetsLoading(false);
     }
   }
 
@@ -145,7 +157,7 @@ export default function BudgetPage() {
     if (!selectedSheet) return;
     setExpensesLoading(true);
     try {
-      const res = await fetch(`/api/expenses/${selectedYear}/${selectedMonth}?sheetId=${selectedSheet.id}`);
+      const res = await authFetch(`/api/expenses/year/${selectedYear}/${selectedMonth}?sheetId=${selectedSheet.id}`);
       const data = await res.json();
       setExpenses(data.expenses);
       setMonthExists(data.monthExists);
@@ -160,7 +172,7 @@ export default function BudgetPage() {
   }
 
   async function fetchCurrentMonth() {
-    const res = await fetch("/api/months/current", { method: "POST" });
+    const res = await authFetch("/api/months/current", { method: "POST" });
     const month = await res.json();
     setSelectedYear(month.year);
     setSelectedMonth(month.month);
@@ -169,7 +181,7 @@ export default function BudgetPage() {
 
   async function fetchLatestPay() {
     setPayStatus("loading");
-    const res = await fetch("/api/pay/latest");
+    const res = await authFetch("/api/pay/latest");
     const pay = await res.json();
     if (pay) {
       setPayStatus("idle");
@@ -189,11 +201,11 @@ export default function BudgetPage() {
     }
   }
 
-  async function confirmPayChange() {
+async function confirmPayChange() {
     if (pendingPay !== null) {
       try {
         setPayStatus("saving");
-        const res = await fetch("/api/pay", {
+        const res = await authFetch("/api/pay", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ amount: pendingPay }),
@@ -211,18 +223,30 @@ export default function BudgetPage() {
   }
 
   async function handleCreateFromPrevious() {
+    const res = await authFetch("/api/months");
+    const data = await res.json();
+    setAllSheets(data);
+    setCopyYear(null);
+    setCopyMonth(null);
+    setCopyFromSheetId(null);
+    setNewSheetName("");
     setShowCreateDialog(true);
   }
 
   async function confirmCreateFromPrevious() {
+    if (!newSheetName.trim()) return;
+    
     try {
       setIsCreating(true);
-      const res = await fetch(
-        `/api/sheets/${selectedYear}/${selectedMonth}`,
+      const res = await authFetch(
+        `/api/sheets/year/${selectedYear}/${selectedMonth}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: "Main" }),
+          body: JSON.stringify({ 
+            name: newSheetName.trim(),
+            copyFromMonthId: copyFromSheetId 
+          }),
         }
       );
 
@@ -231,10 +255,23 @@ export default function BudgetPage() {
       setMonthExists(true);
       setSheets([data.month]);
       setSelectedSheet(data.month);
+      setNewSheetName("");
+      setCopyFromSheetId(null);
     } finally {
       setIsCreating(false);
       setShowCreateDialog(false);
     }
+  }
+
+  async function handleOpenNewSheetDialog() {
+    const res = await authFetch("/api/months");
+    const data = await res.json();
+    setAllSheets(data);
+    setCopyYear(null);
+    setCopyMonth(null);
+    setCopyFromSheetId(null);
+    setNewSheetName("");
+    setShowNewSheetDialog(true);
   }
 
   async function handleCreateNewSheet() {
@@ -242,8 +279,8 @@ export default function BudgetPage() {
 
     try {
       setIsCreating(true);
-      const res = await fetch(
-        `/api/sheets/${selectedYear}/${selectedMonth}`,
+      const res = await authFetch(
+        `/api/sheets/year/${selectedYear}/${selectedMonth}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -269,7 +306,7 @@ export default function BudgetPage() {
     if (!selectedSheet) return;
 
     try {
-      await fetch(`/api/sheets/${selectedSheet.id}`, { method: "DELETE" });
+      await authFetch(`/api/sheets/id/${selectedSheet.id}`, { method: "DELETE" });
       setSheets((prev) => prev.filter((s) => s.id !== selectedSheet.id));
       const remainingSheets = sheets.filter((s) => s.id !== selectedSheet.id);
       if (remainingSheets.length > 0) {
@@ -284,16 +321,40 @@ export default function BudgetPage() {
     }
   }
 
+  const availableYears = useMemo(() => {
+    const years = new Set(allSheets.map(s => s.year));
+    return Array.from(years).sort((a, b) => b - a);
+  }, [allSheets]);
+
+  const availableMonths = useMemo(() => {
+    if (!copyYear) return [];
+    const months = new Set(
+      allSheets.filter(s => s.year === copyYear).map(s => s.month)
+    );
+    return Array.from(months).sort((a, b) => a - b);
+  }, [copyYear, allSheets]);
+
+  const availableSheetsForCopy = useMemo(() => {
+    if (!copyYear || !copyMonth) return [];
+    return allSheets.filter(s => s.year === copyYear && s.month === copyMonth);
+  }, [copyYear, copyMonth, allSheets]);
+
   const displayedYears = useMemo(() => {
     const currentYear = new Date().getFullYear();
     const years = new Set([selectedYear - 1, selectedYear, selectedYear +1, currentYear]);
     return Array.from(years).sort((a, b) => a - b);
   }, [selectedYear]);
 
-  const showCreateButton = monthExists === false && !expensesLoading;
+  const showCreateButton = monthExists === false && !expensesLoading && !sheetsLoading;
 
   return (
     <div className="min-h-screen bg-muted/40 p-6">
+      <div className="flex justify-end mb-4">
+        <Button variant="outline" size="sm" onClick={() => signOut()}>
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign Out
+        </Button>
+      </div>
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -387,7 +448,7 @@ export default function BudgetPage() {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setShowNewSheetDialog(true)}
+                  onClick={handleOpenNewSheetDialog}
                   className="mb-0.5"
                   title="Add new sheet"
                 >
@@ -419,7 +480,24 @@ export default function BudgetPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {showCreateButton ? (
+            {sheetsLoading ? (
+              <div className="space-y-4">
+                <div className="text-right">
+                  <Skeleton className="h-10 w-28 ml-auto" />
+                </div>
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex gap-4">
+                      <Skeleton className="h-10 flex-1" />
+                      <Skeleton className="h-10 w-24" />
+                      <Skeleton className="h-10 w-24" />
+                      <Skeleton className="h-5 w-16" />
+                      <Skeleton className="h-10 w-20" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : showCreateButton ? (
               <div className="flex flex-col items-center justify-center py-8 space-y-4">
                 <p className="text-muted-foreground text-center">
                   No expense sheet exists for this month.
@@ -496,18 +574,90 @@ export default function BudgetPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <AlertDialogContent>
+<AlertDialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Create Expense Sheet?</AlertDialogTitle>
+            <AlertDialogTitle>Create Expense Sheet</AlertDialogTitle>
             <AlertDialogDescription>
-              This will create a new expense sheet for{" "}
+              Create a new expense sheet for{" "}
               {selectedMonth && formatMonth(selectedMonth)} {selectedYear}.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="create-sheet-name">Sheet Name</Label>
+              <Input
+                id="create-sheet-name"
+                placeholder="e.g., Main"
+                value={newSheetName}
+                onChange={(e) => setNewSheetName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Copy from existing sheet (optional)</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <Select
+                  value={copyYear?.toString() || ""}
+                  onValueChange={(val) => {
+                    setCopyYear(val ? parseInt(val) : null);
+                    setCopyMonth(null);
+                    setCopyFromSheetId(null);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableYears.map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={copyMonth?.toString() || ""}
+                  onValueChange={(val) => {
+                    setCopyMonth(val ? parseInt(val) : null);
+                    setCopyFromSheetId(null);
+                  }}
+                  disabled={!copyYear}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableMonths.map((month) => (
+                      <SelectItem key={month} value={month.toString()}>
+                        {formatMonth(month)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={copyFromSheetId?.toString() || ""}
+                  onValueChange={(val) =>
+                    setCopyFromSheetId(val ? parseInt(val) : null)
+                  }
+                  disabled={!copyMonth}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sheet" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSheetsForCopy.map((sheet) => (
+                      <SelectItem key={sheet.id} value={sheet.id.toString()}>
+                        {sheet.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button onClick={confirmCreateFromPrevious} disabled={isCreating}>
+            <Button onClick={confirmCreateFromPrevious} disabled={!newSheetName.trim() || isCreating}>
               {isCreating ? "Creating..." : "Create"}
             </Button>
           </AlertDialogFooter>
@@ -515,7 +665,7 @@ export default function BudgetPage() {
       </AlertDialog>
 
       <Dialog open={showNewSheetDialog} onOpenChange={setShowNewSheetDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Create New Sheet</DialogTitle>
             <DialogDescription>
@@ -534,25 +684,65 @@ export default function BudgetPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="copy-from">Copy from existing sheet (optional)</Label>
-              <Select
-                value={copyFromSheetId?.toString() || "none"}
-                onValueChange={(val) =>
-                  setCopyFromSheetId(val === "none" ? null : parseInt(val))
-                }
-              >
-                <SelectTrigger id="copy-from">
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None (start empty)</SelectItem>
-                  {sheets.map((sheet) => (
-                    <SelectItem key={sheet.id} value={sheet.id.toString()}>
-                      {sheet.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Copy from existing sheet (optional)</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <Select
+                  value={copyYear?.toString() || ""}
+                  onValueChange={(val) => {
+                    setCopyYear(val ? parseInt(val) : null);
+                    setCopyMonth(null);
+                    setCopyFromSheetId(null);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableYears.map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={copyMonth?.toString() || ""}
+                  onValueChange={(val) => {
+                    setCopyMonth(val ? parseInt(val) : null);
+                    setCopyFromSheetId(null);
+                  }}
+                  disabled={!copyYear}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableMonths.map((month) => (
+                      <SelectItem key={month} value={month.toString()}>
+                        {formatMonth(month)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={copyFromSheetId?.toString() || ""}
+                  onValueChange={(val) =>
+                    setCopyFromSheetId(val ? parseInt(val) : null)
+                  }
+                  disabled={!copyMonth}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sheet" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSheetsForCopy.map((sheet) => (
+                      <SelectItem key={sheet.id} value={sheet.id.toString()}>
+                        {sheet.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <DialogFooter>

@@ -1,4 +1,4 @@
-import { supabase } from './db/client'
+import { supabase } from '@/db/client'
 
 export type AuthUser = {
   id: string

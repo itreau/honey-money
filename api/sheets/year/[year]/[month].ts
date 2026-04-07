@@ -1,8 +1,10 @@
+import '../../../_init';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getSheetsByYearMonth, createSheet, createSheetFromPrevious } from '../../../src/db';
+import { withAuth } from '../../../_auth';
+import { getSheetsByYearMonth, createSheet, createSheetFromPrevious, getExpensesByMonthId } from '../../../../src/db';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const{ year, month } = req.query;
+export default withAuth(async (req: VercelRequest, res: VercelResponse) => {
+  const { year, month } = req.query;
   
   if (typeof year !== 'string' || typeof month !== 'string') {
     return res.status(400).json({ error: 'Invalid parameters' });
@@ -27,19 +29,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const body = req.body;
       const name = body?.name || 'Main';
       const copyFromMonthId = body?.copyFromMonthId ? parseInt(body.copyFromMonthId, 10) : null;
-      
+
       let sheet;
       if (copyFromMonthId) {
         sheet = await createSheetFromPrevious(yearNum, monthNum, name, copyFromMonthId);
       } else {
         sheet = await createSheet(yearNum, monthNum, name);
       }
-      
-      res.status(201).json(sheet);
+
+      const expenses = await getExpensesByMonthId(sheet.id);
+      res.status(201).json({ month: sheet, expenses });
     } catch (error) {
       res.status(500).json({ error: 'Failed to create sheet' });
     }
   } else {
     res.status(405).json({ error: 'Method not allowed' });
   }
-}
+});
