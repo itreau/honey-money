@@ -1,9 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../src/db/database.types';
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables');
+}
 
 export type AuthHandler = (
   req: VercelRequest,
@@ -25,7 +28,12 @@ export async function requireAuth(
 
   const token = authHeader.replace('Bearer ', '');
   
-  const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+  if (!supabaseUrl || !supabaseAnonKey) {
+    res.status(500).json({ error: 'Server configuration error' });
+    return;
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
   const { data: { user }, error } = await supabase.auth.getUser(token);
 
   if (error || !user) {
