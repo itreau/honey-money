@@ -18,7 +18,7 @@ interface BudgetTableProps {
   loading: boolean;
   year: number;
   month: number;
-  sheetId: number | null;
+  sheetId: string | null;
   onExpensesChange: (expenses: Expense[]) => void;
 }
 
@@ -34,7 +34,7 @@ const BudgetTableComponent = ({
   const [isAddingExpense, setIsAddingExpense] = useState(false);
 
   const updateExpense = useCallback(async (
-    id: number,
+    id: string,
     updates: { category?: string; budget?: number; amount?: number },
   ) => {
     await authFetch(`/api/expenses/id/${id}`, {
@@ -48,7 +48,7 @@ const BudgetTableComponent = ({
     );
   }, [expenses, onExpensesChange]);
 
-  const deleteExpense = useCallback(async (id: number) => {
+  const deleteExpense = useCallback(async (id: string) => {
     await authFetch(`/api/expenses/id/${id}`, { method: "DELETE" });
 
     onExpensesChange(expenses.filter((e) => e.id !== id));
@@ -78,7 +78,7 @@ const BudgetTableComponent = ({
     setCopiedExpense(expense);
   }, []);
 
-  const handlePaste = useCallback(async (targetId: number, sourceExpense: Expense) => {
+  const handlePaste = useCallback(async (targetId: string, sourceExpense: Expense) => {
     const updates = {
       category: sourceExpense.category,
       budget: sourceExpense.budget,

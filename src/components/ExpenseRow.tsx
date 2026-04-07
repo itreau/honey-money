@@ -20,12 +20,12 @@ interface ExpenseRowProps {
   expense: Expense;
   copiedExpense: Expense | null;
   onUpdate: (
-    id: number,
+    id: string,
     updates: { category?: string; budget?: number; amount?: number },
   ) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
   onCopy: (expense: Expense) => void;
-  onPaste: (targetId: number, sourceExpense: Expense) => void;
+  onPaste: (targetId: string, sourceExpense: Expense) => void;
   onClearCopied: () => void;
   hasCopiedExpense: boolean;
 }

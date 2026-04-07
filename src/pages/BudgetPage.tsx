@@ -440,9 +440,9 @@ async function confirmPayChange() {
                 <div className="w-48 space-y-2">
                   <Label htmlFor="sheet-select">Sheet</Label>
                   <Select
-                    value={selectedSheet?.id?.toString() || ""}
+                    value={selectedSheet?.id || ""}
                     onValueChange={(id) => {
-                      const sheet = sheets.find((s) => s.id === parseInt(id));
+                      const sheet = sheets.find((s) => s.id === id);
                       setSelectedSheet(sheet || null);
                     }}
                   >
@@ -451,7 +451,7 @@ async function confirmPayChange() {
                     </SelectTrigger>
                     <SelectContent>
                       {sheets.map((sheet) => (
-                        <SelectItem key={sheet.id} value={sheet.id.toString()}>
+                        <SelectItem key={sheet.id} value={sheet.id}>
                           {sheet.name}
                         </SelectItem>
                       ))}
@@ -659,11 +659,11 @@ async function confirmPayChange() {
                     <SelectValue placeholder="Sheet" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableSheetsForCopy.map((sheet) => (
-                      <SelectItem key={sheet.id} value={sheet.id.toString()}>
-                        {sheet.name}
-                      </SelectItem>
-                    ))}
+{availableSheetsForCopy.map((sheet) => (
+                        <SelectItem key={sheet.id} value={sheet.id}>
+                          {sheet.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -749,11 +749,11 @@ async function confirmPayChange() {
                     <SelectValue placeholder="Sheet" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableSheetsForCopy.map((sheet) => (
-                      <SelectItem key={sheet.id} value={sheet.id.toString()}>
-                        {sheet.name}
-                      </SelectItem>
-                    ))}
+{availableSheetsForCopy.map((sheet) => (
+                        <SelectItem key={sheet.id} value={sheet.id}>
+                          {sheet.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
