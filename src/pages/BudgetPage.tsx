@@ -250,6 +250,10 @@ async function confirmPayChange() {
         }
       );
 
+      if (!res.ok) {
+        throw new Error('Failed to create sheet');
+      }
+
       const data = await res.json();
       setExpenses(data.expenses || []);
       setMonthExists(true);
@@ -257,6 +261,9 @@ async function confirmPayChange() {
       setSelectedSheet(data.month);
       setNewSheetName("");
       setCopyFromSheetId(null);
+    } catch (error) {
+      console.error('Error creating sheet:', error);
+      alert('Failed to create sheet. Please try again.');
     } finally {
       setIsCreating(false);
       setShowCreateDialog(false);
@@ -291,11 +298,18 @@ async function confirmPayChange() {
         }
       );
 
+      if (!res.ok) {
+        throw new Error('Failed to create sheet');
+      }
+
       const data = await res.json();
       setSheets((prev) => [...prev, data.month]);
       setSelectedSheet(data.month);
       setNewSheetName("");
       setCopyFromSheetId(null);
+    } catch (error) {
+      console.error('Error creating sheet:', error);
+      alert('Failed to create sheet. Please try again.');
     } finally {
       setIsCreating(false);
       setShowNewSheetDialog(false);
