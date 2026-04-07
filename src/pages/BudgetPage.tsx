@@ -56,8 +56,8 @@ export default function BudgetPage() {
   
   const { signOut } = useAuth();
   
-  const [selectedYear, setSelectedYear] = useState<number>(currentDate.year);
-  const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.month);
+  const [selectedYear, setSelectedYear] = useState<number>(() => currentDate.year);
+  const [selectedMonth, setSelectedMonth] = useState<number>(() => currentDate.month);
   const [selectedSheet, setSelectedSheet] = useState<Month | null>(null);
   const [sheets, setSheets] = useState<Month[]>([]);
   const [monthExists, setMonthExists] = useState<boolean | null>(null);
@@ -362,7 +362,7 @@ async function confirmPayChange() {
       >
         <div className="flex flex-col gap-4">
           <Tabs
-            value={selectedYear.toString()}
+            value={String(selectedYear ?? new Date().getFullYear())}
             onValueChange={handleYearSelect}
             className="w-full"
           >
