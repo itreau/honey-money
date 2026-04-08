@@ -5,6 +5,7 @@ import { CurrencyInput } from "@/components/CurrencyInput";
 import { Label } from "@/components/ui/label";
 import { Loader, Check, AlertCircle, ChevronLeft, ChevronRight, Plus, Trash2, LogOut } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BeeIcon } from "@/components/ui/bee-icon";
 import {
   Select,
   SelectContent,
@@ -380,6 +381,18 @@ async function confirmPayChange() {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-6"
       >
+<div className="flex items-center justify-center mb-6">
+          <h1 className="relative text-4xl font-extrabold">
+            <span className="absolute inset-0 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 bg-clip-text text-transparent blur-xl opacity-50 select-none">
+              Honey Money
+              <BeeIcon size={32} color="#f59e0b" strokeWidth={1.5} />
+            </span>
+            <span className="relative bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 bg-clip-text text-transparent flex items-center gap-3">
+              Honey Money
+              <BeeIcon size={32} color="#f59e0b" strokeWidth={1.5} />
+            </span>
+          </h1>
+        </div>
         <div className="flex flex-col gap-4">
           <Tabs
             value={String(selectedYear ?? new Date().getFullYear())}
